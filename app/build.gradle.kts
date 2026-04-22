@@ -3,15 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.connectvibe"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    namespace = "com.tuapp.eventos"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.connectvibe"
+        applicationId = "com.tuapp.eventos"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
