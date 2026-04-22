@@ -14,10 +14,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dashboard &amp; Stats"
+            android:text="@string/dashboard_and_stats"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#212121"
+            android:textColor="@color/md_theme_onSurface"
             android:layout_marginBottom="24dp"/>
 
         <!-- Stat Card 1 -->
@@ -35,9 +35,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Event Progress"
+                    android:text="@string/event_progress"
                     android:textSize="16sp"
-                    android:textColor="#757575" />
+                    android:textColor="@color/md_theme_onSurfaceVariant" />
                 <ProgressBar
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
@@ -50,10 +50,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Fines &amp; Penalties"
+            android:text="@string/fines_and_penalties"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="#212121"
+            android:textColor="@color/md_theme_onSurface"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"/>
 
@@ -67,10 +67,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="40dp"
-                android:text="System of fines for unfulfilled roles (Could requirement)"
+                android:text="@string/fines_placeholder"
                 android:textAlignment="center"
                 android:textSize="16sp"
-                android:textColor="#757575" />
+                android:textColor="@color/md_theme_onSurfaceVariant" />
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>

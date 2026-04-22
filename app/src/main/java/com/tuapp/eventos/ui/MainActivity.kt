@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
             when (destination.id) {
                 R.id.privateEventsFragment,
                 R.id.publicEventsFragment,
-                R.id.profileFragment -> binding.bottomNavigation.visibility = View.VISIBLE
+                R.id.joinedEventsFragment -> binding.bottomNavigation.visibility = View.VISIBLE
                 else -> binding.bottomNavigation.visibility = View.GONE
             }
         }

@@ -12,7 +12,7 @@ import com.tuapp.eventos.databinding.FragmentEventListBinding
 import com.tuapp.eventos.domain.model.Event
 import java.util.Date
 
-class PublicEventsFragment : Fragment() {
+class JoinedEventsFragment : Fragment() {
 
     private var _binding: FragmentEventListBinding? = null
     private val binding get() = _binding!!
@@ -41,9 +41,7 @@ class PublicEventsFragment : Fragment() {
         setupRecyclerView()
         loadData()
         
-        binding.fabAddEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_global_createEventFragment)
-        }
+        binding.fabAddEvent.visibility = View.GONE
 
         binding.ivUserProfile.setOnClickListener {
             findNavController().navigate(R.id.profileFragment)
@@ -51,7 +49,7 @@ class PublicEventsFragment : Fragment() {
     }
 
     private fun setupToolbar() {
-        binding.tvScreenTitle.text = getString(R.string.public_label)
+        binding.tvScreenTitle.text = getString(R.string.joined_label)
     }
 
     private fun setupRecyclerView() {
@@ -62,9 +60,10 @@ class PublicEventsFragment : Fragment() {
     }
 
     private fun loadData() {
+        // Here you would normally fetch events the user is participating in
         val dummyEvents = listOf(
-            Event("2", "Rock Festival", "Public music", Date(), "Madrid", true, "o2"),
-            Event("4", "Community Clean-up", "Help the park", Date(), "City Park", true, "o3")
+            Event("1", "Family BBQ", "Private fun", Date(), "Valencia", false, "o1"),
+            Event("2", "Rock Festival", "Public music", Date(), "Madrid", true, "o2")
         )
         eventAdapter.submitList(dummyEvents)
     }

@@ -31,16 +31,16 @@ class EventAdapter(
             binding.tvEventTitle.text = event.title
             binding.tvEventDate.text = dateFormat.format(event.date)
             binding.tvEventLocation.text = event.location
-            
-            if (event.isPublic) {
-                binding.tvEventBadge.text = binding.root.context.getString(R.string.public_label)
-                binding.tvEventBadge.setBackgroundResource(R.drawable.bg_badge_public)
-            } else {
-                binding.tvEventBadge.text = binding.root.context.getString(R.string.private_label)
-                binding.tvEventBadge.setBackgroundResource(R.drawable.bg_badge_private)
-            }
 
-            binding.root.setOnClickListener { onEventClick(event) }
+            // ... icono logic ...
+
+            binding.root.setOnClickListener { 
+                val bundle = android.os.Bundle().apply {
+                    putString("eventTitle", event.title)
+                    putString("eventDescription", event.description)
+                }
+                onEventClick(event) 
+            }
         }
     }
 

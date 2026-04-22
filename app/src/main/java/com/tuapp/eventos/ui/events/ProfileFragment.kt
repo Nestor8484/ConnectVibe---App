@@ -24,17 +24,13 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        setupToolbar()
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
         
         // Placeholder user data
-        binding.tvUserName.text = "John Doe"
-        binding.tvUserEmail.text = "john.doe@example.com"
-    }
-
-    private fun setupToolbar() {
-        binding.toolbar.setNavigationOnClickListener {
-            findNavController().popBackStack()
-        }
+        binding.tvUserName.text = "Joan Doe"
+        binding.tvUserEmail.text = "joan.doe@example.com"
     }
 
     override fun onDestroyView() {

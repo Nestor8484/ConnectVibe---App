@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvDialogRoleName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:textColor="@color/md_theme_onSurface"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            tools:text="Nombre del Rol" />
+
+        <TextView
+            android:id="@+id/tvDialogRoleDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textAlignment="center"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="16sp"
+            tools:text="Descripción detallada de lo que este rol implica y las responsabilidades que conlleva." />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Tareas asignadas:"
+            android:textColor="@color/md_theme_onSurface"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvDialogTasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            tools:text="• Tarea 1\n• Tarea 2\n• Tarea 3" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAssign"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:paddingVertical="12dp"
+            android:text="Asignarme a este rol"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClose"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cerrar" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,67 @@
+<resources>
+    <string name="app_name">ConnectVibe</string>
+    <string name="add_event">Añadir Evento</string>
+    <string name="event_title">Título</string>
+    <string name="event_description">Descripción</string>
+    <string name="is_public_event">Evento Público</string>
+    <string name="save_event">Guardar Evento</string>
+    <string name="new_event">Nuevo Evento</string>
+    <string name="participants_and_roles">Participantes y Roles</string>
+    <string name="expenses">Gastos</string>
+    <string name="coming_soon_expenses">Próximamente: Gestión de gastos y simplificación</string>
+    <string name="add_participant">Añadir Participante</string>
+    <string name="event_detail">Detalle del Evento</string>
+    <string name="public_label">Públicos</string>
+    <string name="private_label">Grupos</string>
+
+    <string name="tab_info">Info</string>
+    <string name="tab_expenses">Gastos</string>
+    <string name="tab_tasks">Tareas</string>
+    <string name="tab_stats">Estadísticas</string>
+    <string name="tab_events">Eventos</string>
+    <string name="tab_dashboard">Panel</string>
+    <string name="tab_members">Miembros</string>
+    <string name="tab_roles">Roles</string>
+    <string name="tab_budget">Presupuesto</string>
+
+    <string name="total_spent">Total Gastado</string>
+    <string name="simplify_debts">Simplificar Deudas</string>
+    <string name="add_expense">Añadir Gasto</string>
+    <string name="tasks_and_reminders">Tareas y Recordatorios</string>
+    <string name="new_task">Nueva Tarea</string>
+    <string name="dashboard_and_stats">Panel y Estadísticas</string>
+    <string name="event_progress">Progreso del Evento</string>
+    <string name="fines_and_penalties">Multas y Sanciones</string>
+    <string name="fines_placeholder">Sistema de multas por roles no cumplidos</string>
+
+    <string name="profile_label">Perfil</string>
+    <string name="joined_label">Mis Eventos</string>
+    <string name="profile_picture">Foto de Perfil</string>
+    <string name="settings">Ajustes</string>
+    <string name="account_settings">Ajustes de Cuenta</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="logout">Cerrar Sesión</string>
+
+    <string name="save_expense">Guardar Gasto</string>
+    <string name="upload_receipt">Subir Recibo</string>
+    <string name="set_reminder">Establecer Recordatorio</string>
+    <string name="create_task">Crear Tarea</string>
+
+    <string name="total_balance">Balance Total</string>
+    <string name="upcoming_events">Próximos Eventos</string>
+    <string name="active_tasks">Tareas Activas</string>
+    <string name="expenses_by_category">Gastos por Categoría</string>
+    <string name="view_bar_chart">Ver en Barras</string>
+    <string name="view_pie_chart">Ver en Circular</string>
+    <string name="task_progress">Progreso de Tareas</string>
+    <string name="tasks_completed_suffix">de las tareas completadas</string>
+    <string name="add_member">Añadir Miembro</string>
+    <string name="app_version_prefix">Versión</string>
+    <string name="back_button">Atrás</string>
+    <string name="event_participants_label">Participantes</string>
+
+    <string name="category_food">Comida</string>
+    <string name="category_drinks">Bebida</string>
+    <string name="category_logistics">Logística</string>
+    <string name="category_other">Otros</string>
+</resources>

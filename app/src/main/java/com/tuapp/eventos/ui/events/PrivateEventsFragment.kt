@@ -17,11 +17,12 @@ class PrivateEventsFragment : Fragment() {
     private var _binding: FragmentEventListBinding? = null
     private val binding get() = _binding!!
 
-    private val eventAdapter = EventAdapter { event ->
+    private val eventAdapter = EventAdapter { group ->
         val bundle = Bundle().apply {
-            putString("eventId", event.id)
+            putString("groupId", group.id)
+            putString("groupName", group.title)
         }
-        findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
+        findNavController().navigate(R.id.action_privateEventsFragment_to_groupDetailFragment, bundle)
     }
 
     override fun onCreateView(
@@ -39,13 +40,15 @@ class PrivateEventsFragment : Fragment() {
         setupRecyclerView()
         loadData()
         
-        binding.fabAddEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_global_createEventFragment)
+        binding.fabAddEvent.visibility = View.GONE
+
+        binding.ivUserProfile.setOnClickListener {
+            findNavController().navigate(R.id.profileFragment)
         }
     }
 
     private fun setupToolbar() {
-        binding.toolbar.title = getString(R.string.private_label)
+        binding.tvScreenTitle.text = getString(R.string.private_label)
     }
 
     private fun setupRecyclerView() {
@@ -56,11 +59,13 @@ class PrivateEventsFragment : Fragment() {
     }
 
     private fun loadData() {
-        val dummyEvents = listOf(
-            Event("1", "Family BBQ", "Private fun", Date(), "Valencia", false, "o1"),
-            Event("3", "Board Games", "Cozy evening", Date(), "Home", false, "o1")
+        val dummyGroups = listOf(
+            Event("g1", "Los de la Uni", "Amigos de ingeniería", Date(), "Facultad", false, "o1"),
+            Event("g2", "Familia Pérez", "Reuniones familiares", Date(), "Casa", false, "o1"),
+            Event("g3", "Equipo de Pádel", "Partidos semanales", Date(), "Club Deportivo", false, "o1"),
+            Event("g4", "Viaje Verano 2024", "Planificación viaje", Date(), "Destino", false, "o1")
         )
-        eventAdapter.submitList(dummyEvents)
+        eventAdapter.submitList(dummyGroups)
     }
 
     override fun onDestroyView() {

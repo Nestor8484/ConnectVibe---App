@@ -10,10 +10,10 @@
         android:id="@+id/tvTasksHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tasks &amp; Reminders"
+        android:text="@string/tasks_and_reminders"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="#212121"
+        android:textColor="@color/md_theme_onSurface"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -22,6 +22,8 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="24dp"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -33,7 +35,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="New Task"
+        android:text="@string/new_task"
+        android:textColor="@color/md_theme_onPrimaryContainer"
+        app:iconTint="@color/md_theme_onPrimaryContainer"
+        app:backgroundTint="@color/md_theme_primaryContainer"
         app:icon="@android:drawable/ic_input_add"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

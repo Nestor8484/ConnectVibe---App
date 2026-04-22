@@ -88,7 +88,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
                     android:layout_marginTop="20dp"
-                    android:text="Set Reminder (Must)"
+                    android:text="@string/set_reminder"
                     android:textSize="18sp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -96,7 +96,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
                     android:layout_marginTop="32dp"
-                    android:text="Create Task"
+                    android:text="@string/create_task"
                     android:textSize="20sp"
                     app:cornerRadius="12dp" />
 

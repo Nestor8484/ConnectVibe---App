@@ -3,18 +3,41 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/privateEventsFragment">
+    app:startDestination="@id/joinedEventsFragment">
 
     <fragment
         android:id="@+id/privateEventsFragment"
         android:name="com.tuapp.eventos.ui.events.PrivateEventsFragment"
-        android:label="Private Events"
-        tools:layout="@layout/fragment_event_list" />
+        android:label="Groups"
+        tools:layout="@layout/fragment_event_list">
+        <action
+            android:id="@+id/action_privateEventsFragment_to_groupDetailFragment"
+            app:destination="@id/groupDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/groupDetailFragment"
+        android:name="com.tuapp.eventos.ui.events.GroupDetailFragment"
+        android:label="Group Detail"
+        tools:layout="@layout/fragment_group_detail">
+        <argument
+            android:name="groupId"
+            app:argType="string" />
+        <argument
+            android:name="groupName"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/publicEventsFragment"
         android:name="com.tuapp.eventos.ui.events.PublicEventsFragment"
         android:label="Public Events"
+        tools:layout="@layout/fragment_event_list" />
+
+    <fragment
+        android:id="@+id/joinedEventsFragment"
+        android:name="com.tuapp.eventos.ui.events.JoinedEventsFragment"
+        android:label="Joined Events"
         tools:layout="@layout/fragment_event_list" />
 
     <fragment
@@ -57,7 +80,23 @@
         android:label="Add Task"
         tools:layout="@layout/fragment_add_task" />
 
+    <fragment
+        android:id="@+id/eventParticipantsFragment"
+        android:name="com.tuapp.eventos.ui.eventdetail.EventParticipantsFragment"
+        android:label="Participants"
+        tools:layout="@layout/fragment_event_participants" />
+
+    <fragment
+        android:id="@+id/addMemberFragment"
+        android:name="com.tuapp.eventos.ui.events.AddMemberFragment"
+        android:label="Add Member"
+        tools:layout="@layout/fragment_add_member" />
+
     <!-- Global Actions -->
+    <action
+        android:id="@+id/action_global_addMemberFragment"
+        app:destination="@id/addMemberFragment" />
+
     <action
         android:id="@+id/action_global_createEventFragment"
         app:destination="@id/createEventFragment" />

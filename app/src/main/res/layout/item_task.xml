@@ -5,8 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
     app:cardCornerRadius="12dp"
-    app:cardElevation="1dp">
+    app:cardElevation="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -27,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:textSize="18sp"
-            android:textColor="#212121"
+            android:textColor="@color/md_theme_onSurface"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/cbTask"
             app:layout_constraintTop_toTopOf="parent"
@@ -39,7 +40,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
-            android:textColor="#F44336"
+            android:textColor="@color/md_theme_error"
             app:layout_constraintStart_toStartOf="@id/tvTaskTitle"
             app:layout_constraintTop_toBottomOf="@id/tvTaskTitle"
             tools:text="Deadline: Today, 18:00" />
@@ -50,6 +51,7 @@
             android:layout_height="16dp"
             android:layout_marginStart="8dp"
             android:src="@android:drawable/ic_lock_idle_alarm"
+            app:tint="@color/md_theme_onSurfaceVariant"
             app:layout_constraintBottom_toBottomOf="@id/tvTaskDeadline"
             app:layout_constraintStart_toEndOf="@id/tvTaskDeadline"
             app:layout_constraintTop_toTopOf="@id/tvTaskDeadline"

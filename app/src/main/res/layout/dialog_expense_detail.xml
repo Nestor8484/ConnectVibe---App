@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvDialogExpenseName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:textColor="#0D47A1"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            tools:text="Nombre del Gasto" />
+
+        <TextView
+            android:id="@+id/tvDialogExpenseAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAlignment="center"
+            android:textColor="#1565C0"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            tools:text="0.00€" />
+
+        <TextView
+            android:id="@+id/tvDialogExpenseType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_title_container"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:textColor="#1565C0"
+            android:textSize="14sp"
+            tools:text="Tipo: Comida" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Detalles del pago:"
+            android:textColor="@color/md_theme_onSurface"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:text="• Pagado por: Usuario\n• Fecha: 12/03/2024\n• Estrategia: Dividir equitativamente" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUploadReceipt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:paddingVertical="12dp"
+            android:text="Subir Ticket/Recibo"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_upload" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCloseExpense"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cerrar" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

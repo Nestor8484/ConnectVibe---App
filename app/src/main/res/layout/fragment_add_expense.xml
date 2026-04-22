@@ -90,7 +90,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
                     android:layout_marginTop="20dp"
-                    android:text="Upload Receipt (Could)"
+                    android:text="@string/upload_receipt"
                     android:textSize="18sp"
                     app:cornerRadius="12dp"
                     app:icon="@android:drawable/ic_menu_camera" />
@@ -100,7 +100,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
                     android:layout_marginTop="32dp"
-                    android:text="Save Expense"
+                    android:text="@string/save_expense"
                     android:textSize="20sp"
                     app:cornerRadius="12dp" />
 

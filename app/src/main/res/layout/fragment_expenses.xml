@@ -10,9 +10,9 @@
         android:id="@+id/tvTotalExpensesLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Total Spent"
+        android:text="@string/total_spent"
         android:textSize="18sp"
-        android:textColor="#757575"
+        android:textColor="@color/md_theme_onSurfaceVariant"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -23,7 +23,7 @@
         android:text="€ 0.00"
         android:textSize="32sp"
         android:textStyle="bold"
-        android:textColor="#212121"
+        android:textColor="@color/md_theme_onSurface"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTotalExpensesLabel" />
 
@@ -32,7 +32,7 @@
         style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Simplify Debts"
+        android:text="@string/simplify_debts"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="@id/tvTotalExpensesAmount"
         app:layout_constraintEnd_toEndOf="parent"
@@ -54,7 +54,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="Add Expense"
+        android:text="@string/add_expense"
+        android:textColor="@color/md_theme_onPrimaryContainer"
+        app:iconTint="@color/md_theme_onPrimaryContainer"
+        app:backgroundTint="@color/md_theme_primaryContainer"
         app:icon="@android:drawable/ic_input_add"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

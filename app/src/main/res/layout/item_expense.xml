@@ -4,60 +4,69 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="#E3F2FD"
     app:cardCornerRadius="12dp"
-    app:cardElevation="1dp">
+    app:cardElevation="2dp"
+    app:strokeColor="#1E88E5"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvExpenseDescription"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:textColor="#212121"
-            app:layout_constraintEnd_toStartOf="@+id/tvExpenseAmount"
+        <ImageView
+            android:id="@+id/ivExpenseIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_outline"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_agenda"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="Pizza for dinner" />
+            app:tint="#1565C0" />
 
         <TextView
-            android:id="@+id/tvExpensePayer"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvExpenseName"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="#757575"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvExpenseDescription"
-            tools:text="Paid by Alice" />
+            android:layout_marginStart="16dp"
+            tools:text="Compra Bebidas"
+            android:textColor="#0D47A1"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/tvExpenseAmount"
+            app:layout_constraintStart_toEndOf="@id/ivExpenseIcon"
+            app:layout_constraintTop_toTopOf="@id/ivExpenseIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivExpenseIcon"/>
 
         <TextView
             android:id="@+id/tvExpenseAmount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
+            tools:text="45.50€"
+            android:textColor="#1565C0"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#F44336"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/tvExpenseName"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="€ 45.00" />
+            app:layout_constraintTop_toTopOf="@id/tvExpenseName" />
 
-        <ImageView
-            android:id="@+id/ivReceipt"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="8dp"
-            android:src="@android:drawable/ic_menu_camera"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/tvExpensePayer"
-            app:layout_constraintEnd_toStartOf="@id/tvExpenseAmount"
-            app:layout_constraintTop_toTopOf="@id/tvExpensePayer"
-            android:contentDescription="Receipt attached" />
+        <TextView
+            android:id="@+id/tvExpenseType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_title_container"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            tools:text="Catering"
+            android:textColor="#1565C0"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/tvExpenseName"
+            app:layout_constraintTop_toBottomOf="@id/tvExpenseName" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
