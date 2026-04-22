@@ -3,20 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/eventListFragment">
+    app:startDestination="@id/privateEventsFragment">
 
     <fragment
-        android:id="@+id/eventListFragment"
-        android:name="com.tuapp.eventos.ui.events.EventListFragment"
-        android:label="Events"
-        tools:layout="@layout/fragment_event_list">
-        <action
-            android:id="@+id/action_eventListFragment_to_createEventFragment"
-            app:destination="@id/createEventFragment" />
-        <action
-            android:id="@+id/action_eventListFragment_to_eventDetailFragment"
-            app:destination="@id/eventDetailFragment" />
-    </fragment>
+        android:id="@+id/privateEventsFragment"
+        android:name="com.tuapp.eventos.ui.events.PrivateEventsFragment"
+        android:label="Private Events"
+        tools:layout="@layout/fragment_event_list" />
+
+    <fragment
+        android:id="@+id/publicEventsFragment"
+        android:name="com.tuapp.eventos.ui.events.PublicEventsFragment"
+        android:label="Public Events"
+        tools:layout="@layout/fragment_event_list" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.tuapp.eventos.ui.events.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
 
     <fragment
         android:id="@+id/createEventFragment"
@@ -32,15 +37,6 @@
         <argument
             android:name="eventId"
             app:argType="string" />
-        <action
-            android:id="@+id/action_eventDetailFragment_to_addParticipantFragment"
-            app:destination="@id/addParticipantFragment" />
-        <action
-            android:id="@+id/action_eventDetailFragment_to_addExpenseFragment"
-            app:destination="@id/addExpenseFragment" />
-        <action
-            android:id="@+id/action_eventDetailFragment_to_addTaskFragment"
-            app:destination="@id/addTaskFragment" />
     </fragment>
 
     <fragment
@@ -60,5 +56,26 @@
         android:name="com.tuapp.eventos.ui.eventdetail.AddTaskFragment"
         android:label="Add Task"
         tools:layout="@layout/fragment_add_task" />
+
+    <!-- Global Actions -->
+    <action
+        android:id="@+id/action_global_createEventFragment"
+        app:destination="@id/createEventFragment" />
+
+    <action
+        android:id="@+id/action_global_eventDetailFragment"
+        app:destination="@id/eventDetailFragment" />
+
+    <action
+        android:id="@+id/action_global_addParticipantFragment"
+        app:destination="@id/addParticipantFragment" />
+
+    <action
+        android:id="@+id/action_global_addExpenseFragment"
+        app:destination="@id/addExpenseFragment" />
+
+    <action
+        android:id="@+id/action_global_addTaskFragment"
+        app:destination="@id/addTaskFragment" />
 
 </navigation>

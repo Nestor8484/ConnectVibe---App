@@ -31,7 +31,7 @@ class EventInfoFragment : Fragment() {
         setupRecyclerView()
         
         binding.btnAddParticipant.setOnClickListener {
-            findNavController().navigate(R.id.action_eventDetailFragment_to_addParticipantFragment)
+            findNavController().navigate(R.id.action_global_addParticipantFragment)
         }
 
         // Dummy participants

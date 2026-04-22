@@ -25,7 +25,7 @@ class ExpensesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         binding.fabAddExpense.setOnClickListener {
-            findNavController().navigate(R.id.action_eventDetailFragment_to_addExpenseFragment)
+            findNavController().navigate(R.id.action_global_addExpenseFragment)
         }
     }
 

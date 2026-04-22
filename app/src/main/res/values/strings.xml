@@ -28,4 +28,11 @@
     <string name="event_progress">Event Progress</string>
     <string name="fines_and_penalties">Fines &amp; Penalties</string>
     <string name="fines_placeholder">System of fines for unfulfilled roles (Could requirement)</string>
+
+    <string name="profile_label">Profile</string>
+    <string name="profile_picture">Profile Picture</string>
+    <string name="settings">Settings</string>
+    <string name="account_settings">Account Settings</string>
+    <string name="notifications">Notifications</string>
+    <string name="logout">Log Out</string>
 </resources>

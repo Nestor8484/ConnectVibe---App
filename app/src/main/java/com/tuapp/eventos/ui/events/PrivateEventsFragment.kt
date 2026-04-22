@@ -12,7 +12,7 @@ import com.tuapp.eventos.databinding.FragmentEventListBinding
 import com.tuapp.eventos.domain.model.Event
 import java.util.Date
 
-class EventListFragment : Fragment() {
+class PrivateEventsFragment : Fragment() {
 
     private var _binding: FragmentEventListBinding? = null
     private val binding get() = _binding!!
@@ -21,7 +21,7 @@ class EventListFragment : Fragment() {
         val bundle = Bundle().apply {
             putString("eventId", event.id)
         }
-        findNavController().navigate(R.id.action_eventListFragment_to_eventDetailFragment, bundle)
+        findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
     }
 
     override fun onCreateView(
@@ -35,18 +35,17 @@ class EventListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        setupToolbar()
         setupRecyclerView()
+        loadData()
         
         binding.fabAddEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_eventListFragment_to_createEventFragment)
+            findNavController().navigate(R.id.action_global_createEventFragment)
         }
+    }
 
-        // Dummy data for visual verification
-        val dummyEvents = listOf(
-            Event("1", "Family Reunion", "Annual BBQ", Date(), "Backyard", false, "owner1"),
-            Event("2", "Public Concert", "Rock music fest", Date(), "Main Square", true, "owner2")
-        )
-        eventAdapter.submitList(dummyEvents)
+    private fun setupToolbar() {
+        binding.toolbar.title = getString(R.string.private_label)
     }
 
     private fun setupRecyclerView() {
@@ -54,6 +53,14 @@ class EventListFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
             adapter = eventAdapter
         }
+    }
+
+    private fun loadData() {
+        val dummyEvents = listOf(
+            Event("1", "Family BBQ", "Private fun", Date(), "Valencia", false, "o1"),
+            Event("3", "Board Games", "Cozy evening", Date(), "Home", false, "o1")
+        )
+        eventAdapter.submitList(dummyEvents)
     }
 
     override fun onDestroyView() {
