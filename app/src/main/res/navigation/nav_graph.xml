@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/eventListFragment">
+
+    <fragment
+        android:id="@+id/eventListFragment"
+        android:name="com.tuapp.eventos.ui.events.EventListFragment"
+        android:label="Events"
+        tools:layout="@layout/fragment_event_list">
+        <action
+            android:id="@+id/action_eventListFragment_to_createEventFragment"
+            app:destination="@id/createEventFragment" />
+        <action
+            android:id="@+id/action_eventListFragment_to_eventDetailFragment"
+            app:destination="@id/eventDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/createEventFragment"
+        android:name="com.tuapp.eventos.ui.events.CreateEventFragment"
+        android:label="Create Event"
+        tools:layout="@layout/fragment_create_event" />
+
+    <fragment
+        android:id="@+id/eventDetailFragment"
+        android:name="com.tuapp.eventos.ui.eventdetail.EventDetailFragment"
+        android:label="Event Detail"
+        tools:layout="@layout/fragment_event_detail">
+        <argument
+            android:name="eventId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_eventDetailFragment_to_addParticipantFragment"
+            app:destination="@id/addParticipantFragment" />
+        <action
+            android:id="@+id/action_eventDetailFragment_to_addExpenseFragment"
+            app:destination="@id/addExpenseFragment" />
+        <action
+            android:id="@+id/action_eventDetailFragment_to_addTaskFragment"
+            app:destination="@id/addTaskFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addParticipantFragment"
+        android:name="com.tuapp.eventos.ui.eventdetail.AddParticipantFragment"
+        android:label="Add Participant"
+        tools:layout="@layout/fragment_add_participant" />
+
+    <fragment
+        android:id="@+id/addExpenseFragment"
+        android:name="com.tuapp.eventos.ui.eventdetail.AddExpenseFragment"
+        android:label="Add Expense"
+        tools:layout="@layout/fragment_add_expense" />
+
+    <fragment
+        android:id="@+id/addTaskFragment"
+        android:name="com.tuapp.eventos.ui.eventdetail.AddTaskFragment"
+        android:label="Add Task"
+        tools:layout="@layout/fragment_add_task" />
+
+</navigation>

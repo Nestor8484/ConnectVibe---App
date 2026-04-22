@@ -1,3 +1,31 @@
 <resources>
     <string name="app_name">ConnectVibe</string>
+    <string name="add_event">Add Event</string>
+    <string name="event_title">Title</string>
+    <string name="event_description">Description</string>
+    <string name="is_public_event">Public Event</string>
+    <string name="save_event">Save Event</string>
+    <string name="new_event">New Event</string>
+    <string name="participants_and_roles">Participants &amp; Roles</string>
+    <string name="expenses">Expenses</string>
+    <string name="coming_soon_expenses">Coming soon: Expense Management &amp; Simplification</string>
+    <string name="add_participant">Add Participant</string>
+    <string name="event_detail">Event Detail</string>
+    <string name="public_label">Public</string>
+    <string name="private_label">Private</string>
+
+    <string name="tab_info">Info</string>
+    <string name="tab_expenses">Expenses</string>
+    <string name="tab_tasks">Tasks</string>
+    <string name="tab_stats">Stats &amp; Fines</string>
+
+    <string name="total_spent">Total Spent</string>
+    <string name="simplify_debts">Simplify Debts</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="tasks_and_reminders">Tasks &amp; Reminders</string>
+    <string name="new_task">New Task</string>
+    <string name="dashboard_and_stats">Dashboard &amp; Stats</string>
+    <string name="event_progress">Event Progress</string>
+    <string name="fines_and_penalties">Fines &amp; Penalties</string>
+    <string name="fines_placeholder">System of fines for unfulfilled roles (Could requirement)</string>
 </resources>
