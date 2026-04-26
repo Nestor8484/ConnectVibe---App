@@ -73,4 +73,28 @@ class AuthRepository {
             client.auth.signOut()
         }
     }
+
+    suspend fun getCurrentProfile(): Result<Profile> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = client.auth.currentUserOrNull()?.id
+                if (userId != null) {
+                    val profile = client.from("profiles")
+                        .select {
+                            filter {
+                                eq("id", userId)
+                            }
+                        }
+                        .decodeSingle<Profile>()
+                    Result.success(profile)
+                } else {
+                    Result.failure(Exception("Usuario no autenticado"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    fun getCurrentUserEmail(): String? = client.auth.currentUserOrNull()?.email
 }

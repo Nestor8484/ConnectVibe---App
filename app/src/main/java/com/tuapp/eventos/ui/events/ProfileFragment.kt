@@ -4,14 +4,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentProfileBinding
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: ProfileViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,10 +35,32 @@ class ProfileFragment : Fragment() {
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
+
+        binding.btnLogout.setOnClickListener {
+            viewModel.logout()
+            findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
+        }
         
-        // Placeholder user data
-        binding.tvUserName.text = "Joan Doe"
-        binding.tvUserEmail.text = "joan.doe@example.com"
+        observeProfile()
+    }
+
+    private fun observeProfile() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.profileState.collectLatest { state ->
+                when (state) {
+                    is ProfileViewModel.ProfileState.Loading -> {
+                        // Opcional: mostrar un shimmer o un cargando pequeño
+                    }
+                    is ProfileViewModel.ProfileState.Success -> {
+                        binding.tvUserName.text = state.profile.full_name ?: state.profile.username ?: "Usuario"
+                        binding.tvUserEmail.text = state.email
+                    }
+                    is ProfileViewModel.ProfileState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
