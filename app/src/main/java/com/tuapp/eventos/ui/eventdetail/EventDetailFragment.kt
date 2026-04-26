@@ -7,7 +7,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.button.MaterialButton
@@ -15,8 +18,13 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventDetailBinding
+import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
+import com.tuapp.eventos.ui.events.EventViewModel
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -25,7 +33,9 @@ class EventDetailFragment : Fragment() {
     private var _binding: FragmentEventDetailBinding? = null
     private val binding get() = _binding!!
     
+    private val viewModel: EventViewModel by viewModels()
     private var isPieChart = true
+    private var currentEventId: String? = null
 
     private val roleAdapter = RoleAdapter { role ->
         showRoleDetailDialog(role)
@@ -46,6 +56,7 @@ class EventDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        currentEventId = arguments?.getString("eventId")
         val eventTitle = arguments?.getString("eventTitle") ?: "Evento"
         val eventDesc = arguments?.getString("eventDescription") ?: "Descripción del evento"
 
@@ -55,6 +66,7 @@ class EventDetailFragment : Fragment() {
         setupRecyclerViews()
         setupTabs()
         loadData()
+        observeViewModel()
 
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
@@ -65,7 +77,11 @@ class EventDetailFragment : Fragment() {
         }
 
         binding.tvParticipantCount.setOnClickListener {
-            findNavController().navigate(R.id.eventParticipantsFragment)
+            val bundle = Bundle().apply {
+                putString("eventId", currentEventId)
+                putString("eventTitle", eventTitle)
+            }
+            findNavController().navigate(R.id.eventParticipantsFragment, bundle)
         }
 
         binding.fabAddExpense.setOnClickListener {
@@ -75,9 +91,65 @@ class EventDetailFragment : Fragment() {
         binding.btnToggleChartType.setOnClickListener {
             toggleChart()
         }
+
+        binding.cbParticipateDetail.setOnClickListener {
+            val isChecked = binding.cbParticipateDetail.isChecked
+            val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+            if (currentEventId != null && userId != null) {
+                viewModel.toggleParticipation(currentEventId!!, userId, isChecked)
+            }
+        }
+        
+        // Initial data load
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        if (currentEventId != null) {
+            viewModel.loadParticipants(currentEventId!!)
+            if (userId != null) {
+                viewModel.checkParticipation(currentEventId!!, userId)
+            }
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.joinEventState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.JoinEventState.Loading -> {
+                        binding.cbParticipateDetail.isEnabled = false
+                    }
+                    is EventViewModel.JoinEventState.Success -> {
+                        binding.cbParticipateDetail.isEnabled = true
+                        Toast.makeText(context, "Estado de participación actualizado", Toast.LENGTH_SHORT).show()
+                        viewModel.resetJoinState()
+                    }
+                    is EventViewModel.JoinEventState.Error -> {
+                        binding.cbParticipateDetail.isEnabled = true
+                        binding.cbParticipateDetail.isChecked = !binding.cbParticipateDetail.isChecked
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetJoinState()
+                    }
+                    else -> {
+                        binding.cbParticipateDetail.isEnabled = true
+                    }
+                }
+            }
+        }
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isParticipating.collectLatest { isParticipating ->
+                binding.cbParticipateDetail.isChecked = isParticipating
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.participants.collectLatest { participants ->
+                binding.tvParticipantCount.text = "${participants.size} participantes"
+            }
+        }
     }
 
     private fun setupTabs() {
+        binding.tabLayout.removeAllTabs()
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_roles)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_expenses)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_dashboard)))
@@ -191,10 +263,11 @@ class EventDetailFragment : Fragment() {
     }
 
     private fun loadData() {
+        // Placeholder roles for now
         val dummyRoles = listOf(
-            Role("1", "Logística", "Encargado de transporte y materiales"),
-            Role("2", "Catering", "Gestión de comida y bebida"),
-            Role("3", "Música", "Encargado de la playlist y sonido")
+            Role(name = "Logística", description = "Encargado de transporte y materiales"),
+            Role(name = "Catering", description = "Gestión de comida y bebida"),
+            Role(name = "Música", description = "Encargado de la playlist y sonido")
         )
         roleAdapter.submitList(dummyRoles)
 

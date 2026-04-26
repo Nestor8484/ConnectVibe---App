@@ -15,6 +15,9 @@ class ProfileViewModel : ViewModel() {
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Loading)
     val profileState: StateFlow<ProfileState> = _profileState
 
+    private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
+    val logoutState: StateFlow<LogoutState> = _logoutState
+
     init {
         fetchProfile()
     }
@@ -35,7 +38,13 @@ class ProfileViewModel : ViewModel() {
 
     fun logout() {
         viewModelScope.launch {
-            authRepository.signOut()
+            _logoutState.value = LogoutState.Loading
+            try {
+                authRepository.signOut()
+                _logoutState.value = LogoutState.Success
+            } catch (e: Exception) {
+                _logoutState.value = LogoutState.Error(e.message ?: "Error al cerrar sesión")
+            }
         }
     }
 
@@ -43,5 +52,12 @@ class ProfileViewModel : ViewModel() {
         object Loading : ProfileState()
         data class Success(val profile: Profile, val email: String) : ProfileState()
         data class Error(val message: String) : ProfileState()
+    }
+
+    sealed class LogoutState {
+        object Idle : LogoutState()
+        object Loading : LogoutState()
+        object Success : LogoutState()
+        data class Error(val message: String) : LogoutState()
     }
 }

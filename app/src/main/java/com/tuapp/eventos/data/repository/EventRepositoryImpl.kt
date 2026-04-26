@@ -5,9 +5,17 @@ import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.EventMember
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
+import com.tuapp.eventos.domain.model.GroupMember
+import com.tuapp.eventos.domain.model.MemberRole
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class EventRepositoryImpl : EventRepository {
     
@@ -41,9 +49,8 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun createEvent(event: Event, roles: List<Role>): Result<String> {
         return try {
-            // 1. Create the event using the data class directly to avoid "class Any" serialization issues
-            // We use the data class but some fields like id, created_at, updated_at will be null 
-            // and handled by Supabase if we configure the insert properly.
+            // Log exactly what we are sending
+            android.util.Log.d("EventRepository", "Creating event: $event")
             
             val insertedEvent = client.from("events")
                 .insert(event) {
@@ -53,13 +60,11 @@ class EventRepositoryImpl : EventRepository {
             
             val eventId = insertedEvent.id ?: throw Exception("Failed to get event ID")
 
-            // 2. Insert roles
             if (roles.isNotEmpty()) {
                 val rolesToInsert = roles.map { it.copy(eventId = eventId) }
                 client.from("event_roles").insert(rolesToInsert)
             }
 
-            // 3. Add owner as admin member
             val ownerMember = EventMember(
                 eventId = eventId,
                 userId = event.createdBy,
@@ -70,13 +75,26 @@ class EventRepositoryImpl : EventRepository {
 
             Result.success(eventId)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error creating event: ${e.message}")
+            android.util.Log.e("EventRepository", "Error creating event: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     override suspend fun joinEvent(eventId: String, userId: String): Result<Unit> {
         return try {
+            // First check if already member to avoid duplicate key error
+            val existing = client.from("event_members")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                        eq("user_id", userId)
+                    }
+                }.decodeSingleOrNull<EventMember>()
+
+            if (existing != null) {
+                return Result.success(Unit)
+            }
+
             val member = EventMember(
                 eventId = eventId,
                 userId = userId,
@@ -87,6 +105,87 @@ class EventRepositoryImpl : EventRepository {
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error joining event: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun leaveEvent(eventId: String, userId: String): Result<Unit> {
+        return try {
+            client.from("event_members").delete {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error leaving event: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getParticipatingEventIds(userId: String): Result<List<String>> {
+        return try {
+            val members = client.from("event_members")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                }
+                .decodeList<EventMember>()
+            Result.success(members.map { it.eventId })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun isUserParticipating(eventId: String, userId: String): Result<Boolean> {
+        return try {
+            val member = client.from("event_members")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                        eq("user_id", userId)
+                    }
+                }
+                .decodeSingleOrNull<EventMember>()
+            Result.success(member != null)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getEventParticipants(eventId: String): Result<List<GroupMember>> {
+        return try {
+            val response = client.from("event_members")
+                .select(Columns.raw("*, profiles(*)")) {
+                    filter {
+                        eq("event_id", eventId)
+                    }
+                }
+            
+            val jsonArray = Json.parseToJsonElement(response.data).jsonArray
+            
+            val participants = jsonArray.map { element ->
+                val obj = element.jsonObject
+                val userId = obj["user_id"]?.jsonPrimitive?.content ?: ""
+                val isAdmin = obj["is_admin"]?.jsonPrimitive?.boolean ?: false
+                
+                val profileObj = obj["profiles"]?.jsonObject
+                val fullName = profileObj?.get("full_name")?.jsonPrimitive?.content ?: "Usuario"
+                val username = profileObj?.get("username")?.jsonPrimitive?.content ?: "usuario"
+                
+                GroupMember(
+                    userId = userId,
+                    userName = fullName,
+                    role = if (isAdmin) MemberRole.ADMIN else MemberRole.MEMBER,
+                    email = "@$username"
+                )
+            }
+            
+            Result.success(participants)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error getting participants: ${e.message}")
             Result.failure(e)
         }
     }
@@ -123,7 +222,6 @@ class EventRepositoryImpl : EventRepository {
                 .decodeList<Event>()
             emit(events)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error fetching group events: ${e.message}")
             emit(emptyList())
         }
     }

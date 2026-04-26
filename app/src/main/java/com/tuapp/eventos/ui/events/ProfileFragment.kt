@@ -38,7 +38,6 @@ class ProfileFragment : Fragment() {
 
         binding.btnLogout.setOnClickListener {
             viewModel.logout()
-            findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
         }
 
         binding.btnAccountSettings.setOnClickListener {
@@ -50,6 +49,29 @@ class ProfileFragment : Fragment() {
         }
         
         observeProfile()
+        observeLogout()
+    }
+
+    private fun observeLogout() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.logoutState.collectLatest { state ->
+                when (state) {
+                    is ProfileViewModel.LogoutState.Loading -> {
+                        binding.btnLogout.isEnabled = false
+                    }
+                    is ProfileViewModel.LogoutState.Success -> {
+                        findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
+                    }
+                    is ProfileViewModel.LogoutState.Error -> {
+                        binding.btnLogout.isEnabled = true
+                        Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        binding.btnLogout.isEnabled = true
+                    }
+                }
+            }
+        }
     }
 
     private fun observeProfile() {
@@ -57,7 +79,6 @@ class ProfileFragment : Fragment() {
             viewModel.profileState.collectLatest { state ->
                 when (state) {
                     is ProfileViewModel.ProfileState.Loading -> {
-                        // Opcional: mostrar un shimmer o un cargando pequeño
                     }
                     is ProfileViewModel.ProfileState.Success -> {
                         binding.tvUserName.text = state.profile.full_name ?: state.profile.username ?: "Usuario"

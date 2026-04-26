@@ -108,7 +108,11 @@ data class Event(
     
     @SerialName("group_id")
     val groupId: String? = null,
-
+    
     @SerialName("settings")
-    val settings: Map<String, String> = emptyMap()
+    val settings: EventSettings? = EventSettings(),
+    
+    // UI temporary state (Transient - not sent to DB)
+    @kotlinx.serialization.Transient
+    val isUserParticipating: Boolean = false
 )
