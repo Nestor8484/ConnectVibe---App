@@ -58,16 +58,26 @@ class EventParticipantsFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
             adapter = memberAdapter
         }
-        binding.rvParticipants.adapter = adapter
     }
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.participants.collectLatest { participants ->
-                memberAdapter.submitList(participants)
+                // Mapeamos los miembros del dominio al formato que espera el MemberAdapter (data + profile)
+                val mappedParticipants = participants.map { domainMember ->
+                    com.tuapp.eventos.data.model.GroupMember(
+                        group_id = "", // No relevante aquí
+                        user_id = domainMember.userId,
+                        is_admin = domainMember.role == com.tuapp.eventos.domain.model.MemberRole.ADMIN
+                    ) to com.tuapp.eventos.data.model.Profile(
+                        id = domainMember.userId,
+                        full_name = domainMember.userName,
+                        username = domainMember.email
+                    )
+                }
+                memberAdapter.submitList(mappedParticipants)
             }
         }
->>>>>>> f210f82aa5d933ec0c76009456f50d1d8f1c22fb
     }
 
     override fun onDestroyView() {
