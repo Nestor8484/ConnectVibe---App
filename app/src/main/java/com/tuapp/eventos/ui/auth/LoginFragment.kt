@@ -11,6 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentLoginBinding
+import com.tuapp.eventos.di.SupabaseModule
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,12 @@ class LoginFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Auto-login check
+        if (SupabaseModule.client.auth.currentSessionOrNull() != null) {
+            findNavController().navigate(R.id.action_loginFragment_to_joinedEventsFragment)
+            return
+        }
 
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString()

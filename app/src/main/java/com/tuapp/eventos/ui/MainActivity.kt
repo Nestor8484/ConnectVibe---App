@@ -7,6 +7,8 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.ActivityMainBinding
+import com.tuapp.eventos.di.SupabaseModule
+import io.github.jan.supabase.auth.auth
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,6 +22,12 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
+
+        // Check for session
+        val session = SupabaseModule.client.auth.currentSessionOrNull()
+        if (session == null) {
+            navController.navigate(R.id.loginFragment)
+        }
         
         binding.bottomNavigation.setupWithNavController(navController)
 

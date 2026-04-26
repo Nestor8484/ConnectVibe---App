@@ -2,33 +2,95 @@ package com.tuapp.eventos.ui.events
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tuapp.eventos.data.repository.EventRepository
+import com.tuapp.eventos.data.repository.EventRepositoryImpl
 import com.tuapp.eventos.domain.model.Event
-import com.tuapp.eventos.domain.usecases.CreateEventUseCase
-import com.tuapp.eventos.domain.usecases.GetEventsUseCase
+import com.tuapp.eventos.domain.model.Role
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class EventViewModel (
-    private val getEventsUseCase: GetEventsUseCase,
-    private val createEventUseCase: CreateEventUseCase
-) : ViewModel() {
+class EventViewModel : ViewModel() {
 
-    private val _events = MutableStateFlow<List<Event>>(emptyList())
-    val events: StateFlow<List<Event>> = _events.asStateFlow()
+    private val repository: EventRepository = EventRepositoryImpl()
 
-    fun loadEvents() {
+    private val _eventsState = MutableStateFlow<EventsState>(EventsState.Loading)
+    val eventsState: StateFlow<EventsState> = _eventsState.asStateFlow()
+
+    private val _createEventState = MutableStateFlow<CreateEventState>(CreateEventState.Idle)
+    val createEventState: StateFlow<CreateEventState> = _createEventState.asStateFlow()
+
+    private val _joinEventState = MutableStateFlow<JoinEventState>(JoinEventState.Idle)
+    val joinEventState: StateFlow<JoinEventState> = _joinEventState.asStateFlow()
+
+    fun loadPublicEvents() {
         viewModelScope.launch {
-            getEventsUseCase().collect {
-                _events.value = it
+            _eventsState.value = EventsState.Loading
+            repository.getEvents().collect { allEvents ->
+                _eventsState.value = EventsState.Success(allEvents.filter { it.visibility == "public" })
             }
         }
     }
 
-    fun createEvent(event: Event) {
+    fun loadJoinedEvents(userId: String) {
         viewModelScope.launch {
-            createEventUseCase(event)
+            _eventsState.value = EventsState.Loading
+            repository.getEvents().collect { allEvents ->
+                _eventsState.value = EventsState.Success(allEvents.filter { it.createdBy == userId })
+            }
         }
+    }
+
+    fun createEvent(event: Event, roles: List<Role>) {
+        viewModelScope.launch {
+            _createEventState.value = CreateEventState.Loading
+            val result = repository.createEvent(event, roles)
+            if (result.isSuccess) {
+                _createEventState.value = CreateEventState.Success
+            } else {
+                _createEventState.value = CreateEventState.Error(result.exceptionOrNull()?.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun joinEvent(eventId: String, userId: String) {
+        viewModelScope.launch {
+            _joinEventState.value = JoinEventState.Loading
+            val result = repository.joinEvent(eventId, userId)
+            if (result.isSuccess) {
+                _joinEventState.value = JoinEventState.Success
+            } else {
+                _joinEventState.value = JoinEventState.Error(result.exceptionOrNull()?.message ?: "Error al unirse")
+            }
+        }
+    }
+
+    fun resetCreateState() {
+        _createEventState.value = CreateEventState.Idle
+    }
+
+    fun resetJoinState() {
+        _joinEventState.value = JoinEventState.Idle
+    }
+
+    sealed class EventsState {
+        object Loading : EventsState()
+        data class Success(val events: List<Event>) : EventsState()
+        data class Error(val message: String) : EventsState()
+    }
+
+    sealed class CreateEventState {
+        object Idle : CreateEventState()
+        object Loading : CreateEventState()
+        object Success : CreateEventState()
+        data class Error(val message: String) : CreateEventState()
+    }
+
+    sealed class JoinEventState {
+        object Idle : JoinEventState()
+        object Loading : JoinEventState()
+        object Success : JoinEventState()
+        data class Error(val message: String) : JoinEventState()
     }
 }

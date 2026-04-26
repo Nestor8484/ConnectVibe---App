@@ -5,14 +5,14 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.ItemEventBinding
 import com.tuapp.eventos.domain.model.Event
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 class EventAdapter(
-    private val onEventClick: (Event) -> Unit
+    private val onEventClick: (Event) -> Unit,
+    private val onJoinClick: ((Event) -> Unit)? = null
 ) : ListAdapter<Event, EventAdapter.EventViewHolder>(EventDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
@@ -21,25 +21,24 @@ class EventAdapter(
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(getItem(position), onEventClick)
+        holder.bind(getItem(position), onEventClick, onJoinClick)
     }
 
     class EventViewHolder(private val binding: ItemEventBinding) : RecyclerView.ViewHolder(binding.root) {
         private val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-        fun bind(event: Event, onEventClick: (Event) -> Unit) {
-            binding.tvEventTitle.text = event.title
-            binding.tvEventDate.text = dateFormat.format(event.date)
-            binding.tvEventLocation.text = event.location
-
-            // ... icono logic ...
+        fun bind(event: Event, onEventClick: (Event) -> Unit, onJoinClick: ((Event) -> Unit)?) {
+            binding.tvEventTitle.text = event.name
+            binding.tvEventDate.text = event.startDate?.let { dateFormat.format(it) } ?: "Próximamente"
+            binding.tvEventLocation.text = event.visibility.replaceFirstChar { it.uppercase() }
 
             binding.root.setOnClickListener { 
-                val bundle = android.os.Bundle().apply {
-                    putString("eventTitle", event.title)
-                    putString("eventDescription", event.description)
-                }
                 onEventClick(event) 
+            }
+            
+            binding.root.setOnLongClickListener {
+                onJoinClick?.invoke(event)
+                onJoinClick != null
             }
         }
     }

@@ -17,14 +17,16 @@ class GroupDetailFragment : Fragment() {
     private var _binding: FragmentGroupDetailBinding? = null
     private val binding get() = _binding!!
 
-    private val eventAdapter = EventAdapter { event ->
-        val bundle = Bundle().apply {
-            putString("eventId", event.id)
-            putString("eventTitle", event.title)
-            putString("eventDescription", event.description)
+    private val eventAdapter = EventAdapter(
+        onEventClick = { event ->
+            val bundle = Bundle().apply {
+                putString("eventId", event.id)
+                putString("eventTitle", event.name)
+                putString("eventDescription", event.description)
+            }
+            findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
         }
-        findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
-    }
+    )
 
     private val memberAdapter: MemberAdapter by lazy {
         MemberAdapter(isAdmin = true) { member ->
@@ -138,9 +140,10 @@ class GroupDetailFragment : Fragment() {
     }
 
     private fun loadGroupEvents() {
+        // Updated to use new Event model fields
         val dummyEvents = listOf(
-            Event("4", "Cena de Navidad", "Solo para el grupo", Date(), "Restaurante", false, "o1"),
-            Event("5", "Pádel Semanal", "Reserva pista 3", Date(), "Club Deportivo", false, "o1")
+            Event(id = "4", name = "Cena de Navidad", description = "Solo para el grupo", visibility = "private", createdBy = "o1"),
+            Event(id = "5", name = "Pádel Semanal", description = "Reserva pista 3", visibility = "private", createdBy = "o1")
         )
         eventAdapter.submitList(dummyEvents)
     }

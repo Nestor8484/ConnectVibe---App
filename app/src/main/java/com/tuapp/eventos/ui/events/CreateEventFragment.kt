@@ -8,14 +8,29 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.databinding.DialogAddRoleBinding
 import com.tuapp.eventos.databinding.FragmentCreateEventBinding
+import com.tuapp.eventos.di.SupabaseModule
+import com.tuapp.eventos.domain.model.Event
+import com.tuapp.eventos.domain.model.Role
+import com.tuapp.eventos.ui.eventdetail.RoleAdapter
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import java.util.Date
 
 class CreateEventFragment : Fragment() {
 
     private var _binding: FragmentCreateEventBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: EventViewModel by viewModels()
+    private val rolesAdapter = RoleAdapter { /* no-op click */ }
+    private val createdRoles = mutableListOf<Role>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,6 +43,8 @@ class CreateEventFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupRecyclerView()
+
         binding.btnBack.setOnClickListener {
             findNavController().popBackStack()
         }
@@ -37,12 +54,85 @@ class CreateEventFragment : Fragment() {
         }
 
         binding.btnSaveEvent.setOnClickListener {
-            val title = binding.etTitle.text.toString()
-            if (title.isNotBlank()) {
-                Toast.makeText(context, "Event $title saved", Toast.LENGTH_SHORT).show()
-                findNavController().popBackStack()
-            } else {
-                binding.etTitle.error = "Title required"
+            saveEvent()
+        }
+
+        observeViewModel()
+    }
+
+    private fun setupRecyclerView() {
+        binding.rvRolesToCreate.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = rolesAdapter
+        }
+        updateRolesVisibility()
+    }
+
+    private fun updateRolesVisibility() {
+        if (createdRoles.isEmpty()) {
+            binding.tvEmptyRolesHint.visibility = View.VISIBLE
+            binding.rvRolesToCreate.visibility = View.GONE
+        } else {
+            binding.tvEmptyRolesHint.visibility = View.GONE
+            binding.rvRolesToCreate.visibility = View.VISIBLE
+        }
+    }
+
+    private fun saveEvent() {
+        val name = binding.etTitle.text.toString().trim()
+        val description = binding.etDescription.text.toString().trim()
+        val isPublic = binding.switchPublic.isChecked
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+
+        if (name.isBlank()) {
+            binding.etTitle.error = "Title required"
+            return
+        }
+
+        if (userId == null) {
+            Toast.makeText(context, "Error: User not authenticated", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Generating a unique slug
+        val slug = name.lowercase().replace("[^a-z0-9]".toRegex(), "-").take(50) + "-" + System.currentTimeMillis()
+
+        // Using lowercase exactly as confirmed by the user
+        val visibilityValue = if (isPublic) "public" else "private"
+
+        val event = Event(
+            name = name,
+            description = if (description.isEmpty()) null else description,
+            visibility = visibilityValue,
+            createdBy = userId,
+            slug = slug,
+            startDate = Date(),
+            endDate = Date()
+        )
+
+        viewModel.createEvent(event, createdRoles)
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.createEventState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.CreateEventState.Loading -> {
+                        binding.btnSaveEvent.isEnabled = false
+                    }
+                    is EventViewModel.CreateEventState.Success -> {
+                        Toast.makeText(context, "Evento creado correctamente", Toast.LENGTH_SHORT).show()
+                        viewModel.resetCreateState()
+                        findNavController().popBackStack()
+                    }
+                    is EventViewModel.CreateEventState.Error -> {
+                        binding.btnSaveEvent.isEnabled = true
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                    }
+                    else -> {
+                        binding.btnSaveEvent.isEnabled = true
+                    }
+                }
             }
         }
     }
@@ -54,7 +144,6 @@ class CreateEventFragment : Fragment() {
             .setView(dialogBinding.root)
             .create()
 
-        // Configurar dropdown de iconos (ejemplo)
         val icons = listOf("Fotógrafo", "DJ", "Seguridad", "Catering", "Limpieza")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, icons)
         dialogBinding.acRoleIcon.setAdapter(adapter)
@@ -64,10 +153,12 @@ class CreateEventFragment : Fragment() {
         }
 
         dialogBinding.btnConfirm.setOnClickListener {
-            val roleName = dialogBinding.etRoleName.text.toString()
+            val roleName = dialogBinding.etRoleName.text.toString().trim()
             if (roleName.isNotBlank()) {
-                // Aquí añadirías el rol a la lista del RecyclerView
-                Toast.makeText(context, "Rol $roleName añadido", Toast.LENGTH_SHORT).show()
+                val newRole = Role(name = roleName, description = "Rol del evento")
+                createdRoles.add(newRole)
+                rolesAdapter.submitList(createdRoles.toList())
+                updateRolesVisibility()
                 dialog.dismiss()
             } else {
                 dialogBinding.etRoleName.error = "Nombre requerido"

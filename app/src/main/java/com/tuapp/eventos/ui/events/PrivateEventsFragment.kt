@@ -4,26 +4,36 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventListBinding
-import com.tuapp.eventos.domain.model.Event
-import java.util.Date
+import com.tuapp.eventos.di.SupabaseModule
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class PrivateEventsFragment : Fragment() {
 
     private var _binding: FragmentEventListBinding? = null
     private val binding get() = _binding!!
 
-    private val eventAdapter = EventAdapter { group ->
-        val bundle = Bundle().apply {
-            putString("groupId", group.id)
-            putString("groupName", group.title)
+    private val viewModel: EventViewModel by viewModels()
+
+    private val eventAdapter = EventAdapter(
+        onEventClick = { event ->
+            val bundle = Bundle().apply {
+                putString("eventId", event.id)
+                putString("eventTitle", event.name)
+                putString("eventDescription", event.description)
+            }
+            findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
         }
-        findNavController().navigate(R.id.action_privateEventsFragment_to_groupDetailFragment, bundle)
-    }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,9 +48,16 @@ class PrivateEventsFragment : Fragment() {
         
         setupToolbar()
         setupRecyclerView()
-        loadData()
+        observeViewModel()
         
-        binding.fabAddEvent.visibility = View.GONE
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        if (userId != null) {
+            viewModel.loadJoinedEvents(userId)
+        }
+
+        binding.fabAddEvent.setOnClickListener {
+            findNavController().navigate(R.id.action_global_createEventFragment)
+        }
 
         binding.ivUserProfile.setOnClickListener {
             findNavController().navigate(R.id.profileFragment)
@@ -58,14 +75,21 @@ class PrivateEventsFragment : Fragment() {
         }
     }
 
-    private fun loadData() {
-        val dummyGroups = listOf(
-            Event("g1", "Los de la Uni", "Amigos de ingeniería", Date(), "Facultad", false, "o1"),
-            Event("g2", "Familia Pérez", "Reuniones familiares", Date(), "Casa", false, "o1"),
-            Event("g3", "Equipo de Pádel", "Partidos semanales", Date(), "Club Deportivo", false, "o1"),
-            Event("g4", "Viaje Verano 2024", "Planificación viaje", Date(), "Destino", false, "o1")
-        )
-        eventAdapter.submitList(dummyGroups)
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.eventsState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.EventsState.Loading -> {
+                    }
+                    is EventViewModel.EventsState.Success -> {
+                        eventAdapter.submitList(state.events.filter { it.visibility != "public" })
+                    }
+                    is EventViewModel.EventsState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
