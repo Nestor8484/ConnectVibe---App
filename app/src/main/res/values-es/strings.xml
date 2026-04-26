@@ -79,4 +79,12 @@
     <string name="register_button">Registrarse</string>
     <string name="already_have_account">¿Ya tienes cuenta? Inicia sesión</string>
     <string name="error_fields_required">Todos los campos son obligatorios</string>
+    <string name="account_settings_title">Ajustes de Cuenta</string>
+    <string name="save_changes">Guardar Cambios</string>
+    <string name="current_password">Contraseña Actual</string>
+    <string name="new_password">Nueva Contraseña</string>
+    <string name="confirm_new_password">Confirmar Nueva Contraseña</string>
+    <string name="profile_updated_success">Perfil actualizado correctamente</string>
+    <string name="password_updated_success">Contraseña actualizada correctamente</string>
+    <string name="error_passwords_dont_match">Las contraseñas no coinciden</string>
 </resources>

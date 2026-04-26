@@ -139,6 +139,7 @@
                     android:padding="8dp">
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAccountSettings"
                         style="@style/Widget.Material3.Button.TextButton"
                         android:layout_width="match_parent"
                         android:layout_height="64dp"

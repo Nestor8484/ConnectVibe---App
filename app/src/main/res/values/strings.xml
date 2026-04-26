@@ -78,4 +78,12 @@
     <string name="register_button">Register</string>
     <string name="already_have_account">Already have an account? Login</string>
     <string name="error_fields_required">All fields are required</string>
+    <string name="account_settings_title">Account Settings</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="current_password">Current Password</string>
+    <string name="new_password">New Password</string>
+    <string name="confirm_new_password">Confirm New Password</string>
+    <string name="profile_updated_success">Profile updated successfully</string>
+    <string name="password_updated_success">Password updated successfully</string>
+    <string name="error_passwords_dont_match">Passwords don\'t match</string>
 </resources>

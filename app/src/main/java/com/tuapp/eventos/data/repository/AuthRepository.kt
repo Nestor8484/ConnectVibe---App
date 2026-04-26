@@ -74,6 +74,40 @@ class AuthRepository {
         }
     }
 
+    suspend fun updateProfile(fullName: String, username: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = client.auth.currentUserOrNull()?.id
+                if (userId != null) {
+                    val profile = Profile(
+                        id = userId,
+                        username = username,
+                        full_name = fullName
+                    )
+                    client.from("profiles").upsert(profile)
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Usuario no autenticado"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun updatePassword(newPassword: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                client.auth.updateUser {
+                    password = newPassword
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     suspend fun getCurrentProfile(): Result<Profile> {
         return withContext(Dispatchers.IO) {
             try {

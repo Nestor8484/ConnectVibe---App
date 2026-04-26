@@ -40,6 +40,10 @@ class ProfileFragment : Fragment() {
             viewModel.logout()
             findNavController().navigate(R.id.action_profileFragment_to_loginFragment)
         }
+
+        binding.btnAccountSettings.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_accountSettingsFragment)
+        }
         
         observeProfile()
     }
