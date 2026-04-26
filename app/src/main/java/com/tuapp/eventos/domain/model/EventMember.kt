@@ -11,7 +11,7 @@ data class EventMember(
     @SerialName("user_id")
     val userId: String,
     @SerialName("status")
-    val status: String = "joined", // "joined", "left", etc.
+    val status: String = "active", // Match DB default 'active'
     @Serializable(with = TimestampSerializer::class)
     @SerialName("joined_at")
     val joinedAt: Date? = null,

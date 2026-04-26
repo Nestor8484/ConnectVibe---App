@@ -10,6 +10,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.R
+import com.tuapp.eventos.data.model.GroupMember
+import com.tuapp.eventos.data.model.Profile
 import com.tuapp.eventos.data.repository.GroupRepository
 import com.tuapp.eventos.databinding.FragmentGroupDetailBinding
 import com.tuapp.eventos.di.SupabaseModule
@@ -25,6 +27,7 @@ class GroupDetailFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val eventViewModel: EventViewModel by viewModels()
+    private val memberViewModel: MemberViewModel by viewModels()
     private val groupRepository = GroupRepository()
 
     private val eventAdapter = EventAdapter(
@@ -84,7 +87,10 @@ class GroupDetailFragment : Fragment() {
         }
 
         binding.includeMembers.fabAddMember.setOnClickListener {
-            findNavController().navigate(R.id.action_global_addMemberFragment)
+            val bundle = Bundle().apply {
+                putString("groupId", groupId)
+            }
+            findNavController().navigate(R.id.addMemberFragment, bundle)
         }
     }
 
@@ -155,13 +161,26 @@ class GroupDetailFragment : Fragment() {
             eventViewModel.eventsState.collectLatest { state ->
                 when (state) {
                     is EventViewModel.EventsState.Loading -> {
-                        // Opcional: mostrar un mini-cargando en la lista
                     }
                     is EventViewModel.EventsState.Success -> {
                         eventAdapter.submitList(state.events)
                     }
                     is EventViewModel.EventsState.Error -> {
-                        // Manejar error
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            memberViewModel.membersState.collectLatest { state ->
+                when (state) {
+                    is MemberViewModel.MembersState.Loading -> {
+                    }
+                    is MemberViewModel.MembersState.Success -> {
+                        android.util.Log.d("GroupDetail", "Received ${state.members.size} members")
+                        memberAdapter.submitList(state.members)
+                    }
+                    is MemberViewModel.MembersState.Error -> {
                     }
                 }
             }
@@ -170,7 +189,7 @@ class GroupDetailFragment : Fragment() {
 
     private fun loadGroupData(groupId: String) {
         eventViewModel.loadEventsByGroup(groupId)
-        loadGroupMembers()
+        memberViewModel.loadMembers(groupId)
     }
 
     private fun checkAdminStatus(groupId: String) {
@@ -183,15 +202,6 @@ class GroupDetailFragment : Fragment() {
                 binding.fabAddGroupEvent.visibility = View.GONE
             }
         }
-    }
-
-    private fun loadGroupMembers() {
-        val dummyMembers = listOf(
-            com.tuapp.eventos.domain.model.GroupMember("u1", "Joan Doe", com.tuapp.eventos.domain.model.MemberRole.ADMIN, "joan@example.com"),
-            com.tuapp.eventos.domain.model.GroupMember("u2", "Ana García", com.tuapp.eventos.domain.model.MemberRole.MEMBER, "ana@example.com"),
-            com.tuapp.eventos.domain.model.GroupMember("u3", "Carlos Ruiz", com.tuapp.eventos.domain.model.MemberRole.MEMBER, "carlos@example.com")
-        )
-        memberAdapter.submitList(dummyMembers)
     }
 
     override fun onDestroyView() {

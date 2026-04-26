@@ -46,14 +46,8 @@ class EventParticipantsFragment : Fragment() {
     }
 
     private fun loadParticipants() {
-        val participants = listOf(
-            GroupMember("1", "Joan Smith", MemberRole.ADMIN, "joan.smith@example.com"),
-            GroupMember("2", "Maria Garcia", MemberRole.MEMBER, "maria.g@example.com"),
-            GroupMember("3", "Carlos Lopez", MemberRole.MEMBER, "c.lopez@example.com"),
-            GroupMember("4", "Ana Martinez", MemberRole.MEMBER, "ana.mtz@example.com"),
-            GroupMember("5", "David Ruiz", MemberRole.MEMBER, "david.r@example.com")
-        )
-        (binding.rvParticipants.adapter as MemberAdapter).submitList(participants)
+
+        (binding.rvParticipants.adapter as MemberAdapter).submitList(emptyList())
     }
 
     override fun onDestroyView() {

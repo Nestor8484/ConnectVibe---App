@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class GroupMember(
     val group_id: String,
     val user_id: String,
+    val status: String = "active",
     val is_admin: Boolean = false,
-    val joined_at: String? = null
+    val created_at: String? = null
 )

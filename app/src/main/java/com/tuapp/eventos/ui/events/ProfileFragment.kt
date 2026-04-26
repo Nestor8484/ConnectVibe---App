@@ -44,6 +44,10 @@ class ProfileFragment : Fragment() {
         binding.btnAccountSettings.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_accountSettingsFragment)
         }
+
+        binding.btnNotifications.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_notificationsFragment)
+        }
         
         observeProfile()
     }
