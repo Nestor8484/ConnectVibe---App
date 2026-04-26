@@ -64,4 +64,19 @@
     <string name="category_drinks">Bebida</string>
     <string name="category_logistics">Logística</string>
     <string name="category_other">Otros</string>
+
+    <!-- Auth Strings -->
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="login_to_continue">Inicia sesión para continuar</string>
+    <string name="email_hint">Correo Electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="login_button">Entrar</string>
+    <string name="dont_have_account">¿No tienes cuenta? Regístrate</string>
+    <string name="create_account">Crear Cuenta</string>
+    <string name="register_to_start">Regístrate para empezar a organizar</string>
+    <string name="full_name_hint">Nombre Completo</string>
+    <string name="username_hint">Nombre de Usuario</string>
+    <string name="register_button">Registrarse</string>
+    <string name="already_have_account">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="error_fields_required">Todos los campos son obligatorios</string>
 </resources>

@@ -21,7 +21,9 @@ class RegisterViewModel : ViewModel() {
             if (result.isSuccess) {
                 _registrationState.value = RegistrationState.Success
             } else {
-                _registrationState.value = RegistrationState.Error(result.exceptionOrNull()?.message ?: "Error desconocido")
+                val errorMsg = result.exceptionOrNull()?.message ?: "Error desconocido"
+                android.util.Log.e("RegisterViewModel", "Error en registro: $errorMsg")
+                _registrationState.value = RegistrationState.Error(errorMsg)
             }
         }
     }

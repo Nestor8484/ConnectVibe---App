@@ -63,4 +63,19 @@
     <string name="category_drinks">Drinks</string>
     <string name="category_logistics">Logistics</string>
     <string name="category_other">Other</string>
+
+    <!-- Auth Strings -->
+    <string name="welcome_back">Welcome Back</string>
+    <string name="login_to_continue">Login to continue</string>
+    <string name="email_hint">Email Address</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button">Login</string>
+    <string name="dont_have_account">Don\'t have an account? Register</string>
+    <string name="create_account">Create Account</string>
+    <string name="register_to_start">Register to start organizing</string>
+    <string name="full_name_hint">Full Name</string>
+    <string name="username_hint">Username</string>
+    <string name="register_button">Register</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="error_fields_required">All fields are required</string>
 </resources>

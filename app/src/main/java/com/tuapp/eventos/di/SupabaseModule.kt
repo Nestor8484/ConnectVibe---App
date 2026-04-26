@@ -12,7 +12,7 @@ import io.github.jan.supabase.storage.Storage
 object SupabaseModule {
     
 
-    private const val SUPABASE_URL = "https://vpbepmyktlceeuxlgenv.supabase.co/rest/v1/"
+    private const val SUPABASE_URL = "https://vpbepmyktlceeuxlgenv.supabase.co"
     
 
     private const val SUPABASE_KEY = "sb_publishable_6ZS0L38sCDONvpH7Gis0YQ_-St1zV7r"
