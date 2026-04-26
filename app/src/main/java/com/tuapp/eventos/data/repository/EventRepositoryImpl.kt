@@ -111,4 +111,20 @@ class EventRepositoryImpl : EventRepository {
     override suspend fun getExpenses(eventId: String): List<Expense> {
         return emptyList()
     }
+
+    override fun getEventsByGroup(groupId: String): Flow<List<Event>> = flow {
+        try {
+            val events = client.from("events")
+                .select {
+                    filter {
+                        eq("group_id", groupId)
+                    }
+                }
+                .decodeList<Event>()
+            emit(events)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error fetching group events: ${e.message}")
+            emit(emptyList())
+        }
+    }
 }

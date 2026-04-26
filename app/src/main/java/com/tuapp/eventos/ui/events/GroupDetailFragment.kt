@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,6 +15,7 @@ import com.tuapp.eventos.databinding.FragmentGroupDetailBinding
 import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Event
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -21,6 +23,9 @@ class GroupDetailFragment : Fragment() {
 
     private var _binding: FragmentGroupDetailBinding? = null
     private val binding get() = _binding!!
+
+    private val eventViewModel: EventViewModel by viewModels()
+    private val groupRepository = GroupRepository()
 
     private val eventAdapter = EventAdapter(
         onEventClick = { event ->
@@ -41,8 +46,6 @@ class GroupDetailFragment : Fragment() {
         }
     }
 
-    private val groupRepository = GroupRepository()
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -61,6 +64,7 @@ class GroupDetailFragment : Fragment() {
         setupRecyclerViews()
         setupTabs()
         setupDashboardToggle()
+        observeViewModel()
         loadGroupData(groupId)
         checkAdminStatus(groupId)
 
@@ -146,8 +150,26 @@ class GroupDetailFragment : Fragment() {
         binding.fabAddGroupEvent.visibility = View.GONE
     }
 
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            eventViewModel.eventsState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.EventsState.Loading -> {
+                        // Opcional: mostrar un mini-cargando en la lista
+                    }
+                    is EventViewModel.EventsState.Success -> {
+                        eventAdapter.submitList(state.events)
+                    }
+                    is EventViewModel.EventsState.Error -> {
+                        // Manejar error
+                    }
+                }
+            }
+        }
+    }
+
     private fun loadGroupData(groupId: String) {
-        loadGroupEvents()
+        eventViewModel.loadEventsByGroup(groupId)
         loadGroupMembers()
     }
 
@@ -161,15 +183,6 @@ class GroupDetailFragment : Fragment() {
                 binding.fabAddGroupEvent.visibility = View.GONE
             }
         }
-    }
-
-    private fun loadGroupEvents() {
-        // Updated to use new Event model fields
-        val dummyEvents = listOf(
-            Event(id = "4", name = "Cena de Navidad", description = "Solo para el grupo", visibility = "private", createdBy = "o1"),
-            Event(id = "5", name = "Pádel Semanal", description = "Reserva pista 3", visibility = "private", createdBy = "o1")
-        )
-        eventAdapter.submitList(dummyEvents)
     }
 
     private fun loadGroupMembers() {

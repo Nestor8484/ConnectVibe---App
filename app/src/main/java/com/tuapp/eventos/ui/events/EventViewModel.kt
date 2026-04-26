@@ -42,6 +42,15 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun loadEventsByGroup(groupId: String) {
+        viewModelScope.launch {
+            _eventsState.value = EventsState.Loading
+            repository.getEventsByGroup(groupId).collect { events ->
+                _eventsState.value = EventsState.Success(events)
+            }
+        }
+    }
+
     fun createEvent(event: Event, roles: List<Role>) {
         viewModelScope.launch {
             _createEventState.value = CreateEventState.Loading

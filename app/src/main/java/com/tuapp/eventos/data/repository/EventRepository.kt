@@ -13,4 +13,5 @@ interface EventRepository {
     suspend fun deleteEvent(event: Event)
     suspend fun addExpense(eventId: String, expense: Expense)
     suspend fun getExpenses(eventId: String): List<Expense>
+    fun getEventsByGroup(groupId: String): Flow<List<Event>>
 }
