@@ -40,6 +40,20 @@
         <action
             android:id="@+id/action_privateEventsFragment_to_groupDetailFragment"
             app:destination="@id/groupDetailFragment" />
+        <action
+            android:id="@+id/action_privateEventsFragment_to_createGroupFragment"
+            app:destination="@id/createGroupFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/createGroupFragment"
+        android:name="com.tuapp.eventos.ui.events.CreateGroupFragment"
+        android:label="Create Group"
+        tools:layout="@layout/fragment_create_group">
+        <action
+            android:id="@+id/action_createGroupFragment_to_groupDetailFragment"
+            app:destination="@id/groupDetailFragment"
+            app:popUpTo="@id/privateEventsFragment" />
     </fragment>
 
     <fragment
@@ -92,7 +106,13 @@
         android:id="@+id/createEventFragment"
         android:name="com.tuapp.eventos.ui.events.CreateEventFragment"
         android:label="Create Event"
-        tools:layout="@layout/fragment_create_event" />
+        tools:layout="@layout/fragment_create_event">
+        <argument
+            android:name="groupId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+    </fragment>
 
     <fragment
         android:id="@+id/eventDetailFragment"

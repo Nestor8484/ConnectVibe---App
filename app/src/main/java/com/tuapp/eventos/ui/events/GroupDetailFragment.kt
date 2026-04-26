@@ -5,11 +5,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.R
+import com.tuapp.eventos.data.repository.GroupRepository
 import com.tuapp.eventos.databinding.FragmentGroupDetailBinding
+import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Event
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.launch
 import java.util.Date
 
 class GroupDetailFragment : Fragment() {
@@ -36,6 +41,8 @@ class GroupDetailFragment : Fragment() {
         }
     }
 
+    private val groupRepository = GroupRepository()
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -47,13 +54,15 @@ class GroupDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        val groupId = arguments?.getString("groupId") ?: ""
         val groupName = arguments?.getString("groupName") ?: "Grupo"
         binding.tvGroupName.text = groupName
 
         setupRecyclerViews()
         setupTabs()
         setupDashboardToggle()
-        loadGroupData()
+        loadGroupData(groupId)
+        checkAdminStatus(groupId)
 
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
@@ -64,7 +73,10 @@ class GroupDetailFragment : Fragment() {
         }
 
         binding.fabAddGroupEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_global_createEventFragment)
+            val bundle = Bundle().apply {
+                putString("groupId", groupId)
+            }
+            findNavController().navigate(R.id.createEventFragment, bundle)
         }
 
         binding.includeMembers.fabAddMember.setOnClickListener {
@@ -134,9 +146,21 @@ class GroupDetailFragment : Fragment() {
         binding.fabAddGroupEvent.visibility = View.GONE
     }
 
-    private fun loadGroupData() {
+    private fun loadGroupData(groupId: String) {
         loadGroupEvents()
         loadGroupMembers()
+    }
+
+    private fun checkAdminStatus(groupId: String) {
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: return
+        lifecycleScope.launch {
+            val isAdmin = groupRepository.isUserAdmin(groupId, userId)
+            if (isAdmin) {
+                binding.fabAddGroupEvent.visibility = View.VISIBLE
+            } else {
+                binding.fabAddGroupEvent.visibility = View.GONE
+            }
+        }
     }
 
     private fun loadGroupEvents() {

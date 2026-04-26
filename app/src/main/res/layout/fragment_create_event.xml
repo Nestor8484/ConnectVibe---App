@@ -137,6 +137,17 @@
                     android:textColor="#1565C0"
                     android:textStyle="bold" />
 
+                <TextView
+                    android:id="@+id/tvVisibilityHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="#D32F2F"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="Los eventos de grupo son siempre privados" />
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"

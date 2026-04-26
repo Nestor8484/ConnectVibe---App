@@ -43,6 +43,14 @@ class CreateEventFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val groupId = arguments?.getString("groupId")
+        if (groupId != null) {
+            binding.switchPublic.isChecked = false
+            binding.switchPublic.isEnabled = false
+            binding.tvVisibilityHint.visibility = View.VISIBLE
+            binding.tvVisibilityHint.text = "Los eventos de grupo son siempre privados"
+        }
+
         setupRecyclerView()
 
         binding.btnBack.setOnClickListener {
@@ -99,6 +107,7 @@ class CreateEventFragment : Fragment() {
 
         // Using lowercase exactly as confirmed by the user
         val visibilityValue = if (isPublic) "public" else "private"
+        val groupId = arguments?.getString("groupId")
 
         val event = Event(
             name = name,
@@ -107,7 +116,8 @@ class CreateEventFragment : Fragment() {
             createdBy = userId,
             slug = slug,
             startDate = Date(),
-            endDate = Date()
+            endDate = Date(),
+            groupId = groupId
         )
 
         viewModel.createEvent(event, createdRoles)

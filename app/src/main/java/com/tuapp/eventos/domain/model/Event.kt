@@ -106,6 +106,9 @@ data class Event(
     @SerialName("updated_at")
     val updatedAt: Date? = null,
     
+    @SerialName("group_id")
+    val groupId: String? = null,
+
     @SerialName("settings")
     val settings: Map<String, String> = emptyMap()
 )

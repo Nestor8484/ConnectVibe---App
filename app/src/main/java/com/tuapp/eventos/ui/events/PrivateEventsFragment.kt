@@ -22,16 +22,15 @@ class PrivateEventsFragment : Fragment() {
     private var _binding: FragmentEventListBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: EventViewModel by viewModels()
+    private val viewModel: GroupViewModel by viewModels()
 
-    private val eventAdapter = EventAdapter(
-        onEventClick = { event ->
+    private val groupAdapter = GroupAdapter(
+        onGroupClick = { group ->
             val bundle = Bundle().apply {
-                putString("eventId", event.id)
-                putString("eventTitle", event.name)
-                putString("eventDescription", event.description)
+                putString("groupId", group.id)
+                putString("groupName", group.name)
             }
-            findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
+            findNavController().navigate(R.id.action_privateEventsFragment_to_groupDetailFragment, bundle)
         }
     )
 
@@ -52,11 +51,11 @@ class PrivateEventsFragment : Fragment() {
         
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
         if (userId != null) {
-            viewModel.loadJoinedEvents(userId)
+            viewModel.loadGroups(userId)
         }
 
         binding.fabAddEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_global_createEventFragment)
+            findNavController().navigate(R.id.action_privateEventsFragment_to_createGroupFragment)
         }
 
         binding.ivUserProfile.setOnClickListener {
@@ -71,20 +70,20 @@ class PrivateEventsFragment : Fragment() {
     private fun setupRecyclerView() {
         binding.rvEvents.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = eventAdapter
+            adapter = groupAdapter
         }
     }
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.eventsState.collectLatest { state ->
+            viewModel.groupsState.collectLatest { state ->
                 when (state) {
-                    is EventViewModel.EventsState.Loading -> {
+                    is GroupViewModel.GroupsState.Loading -> {
                     }
-                    is EventViewModel.EventsState.Success -> {
-                        eventAdapter.submitList(state.events.filter { it.visibility != "public" })
+                    is GroupViewModel.GroupsState.Success -> {
+                        groupAdapter.submitList(state.groups)
                     }
-                    is EventViewModel.EventsState.Error -> {
+                    is GroupViewModel.GroupsState.Error -> {
                         Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                     }
                 }
