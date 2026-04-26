@@ -5,17 +5,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.databinding.FragmentEventParticipantsBinding
-import com.tuapp.eventos.domain.model.GroupMember
-import com.tuapp.eventos.domain.model.MemberRole
+import com.tuapp.eventos.ui.events.EventViewModel
 import com.tuapp.eventos.ui.events.MemberAdapter
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class EventParticipantsFragment : Fragment() {
 
     private var _binding: FragmentEventParticipantsBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: EventViewModel by viewModels()
+    private val memberAdapter = MemberAdapter(isAdmin = false) { _ -> }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,32 +34,38 @@ class EventParticipantsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val eventId = arguments?.getString("eventId")
+        val eventTitle = arguments?.getString("eventTitle")
+
+        if (eventTitle != null) {
+            binding.tvTitle.text = eventTitle
+        }
+
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
 
         setupRecyclerView()
-        loadParticipants()
+        observeViewModel()
+
+        if (eventId != null) {
+            viewModel.loadParticipants(eventId)
+        }
     }
 
     private fun setupRecyclerView() {
-        binding.rvParticipants.layoutManager = LinearLayoutManager(context)
-        // Usamos isAdmin = false para la vista de participantes general
-        val adapter = MemberAdapter(isAdmin = false) { _ ->
-            // Acción al hacer clic en borrar (no debería ocurrir con isAdmin = false)
+        binding.rvParticipants.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = memberAdapter
         }
-        binding.rvParticipants.adapter = adapter
     }
 
-    private fun loadParticipants() {
-        val participants = listOf(
-            GroupMember("1", "Joan Smith", MemberRole.ADMIN, "joan.smith@example.com"),
-            GroupMember("2", "Maria Garcia", MemberRole.MEMBER, "maria.g@example.com"),
-            GroupMember("3", "Carlos Lopez", MemberRole.MEMBER, "c.lopez@example.com"),
-            GroupMember("4", "Ana Martinez", MemberRole.MEMBER, "ana.mtz@example.com"),
-            GroupMember("5", "David Ruiz", MemberRole.MEMBER, "david.r@example.com")
-        )
-        (binding.rvParticipants.adapter as MemberAdapter).submitList(participants)
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.participants.collectLatest { participants ->
+                memberAdapter.submitList(participants)
+            }
+        }
     }
 
     override fun onDestroyView() {

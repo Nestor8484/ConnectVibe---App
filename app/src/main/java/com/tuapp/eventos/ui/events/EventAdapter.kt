@@ -11,8 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class EventAdapter(
-    private val onEventClick: (Event) -> Unit,
-    private val onJoinClick: ((Event) -> Unit)? = null
+    private val onEventClick: (Event) -> Unit
 ) : ListAdapter<Event, EventAdapter.EventViewHolder>(EventDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
@@ -21,24 +20,22 @@ class EventAdapter(
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.bind(getItem(position), onEventClick, onJoinClick)
+        holder.bind(getItem(position), onEventClick)
     }
 
     class EventViewHolder(private val binding: ItemEventBinding) : RecyclerView.ViewHolder(binding.root) {
         private val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-        fun bind(event: Event, onEventClick: (Event) -> Unit, onJoinClick: ((Event) -> Unit)?) {
+        fun bind(event: Event, onEventClick: (Event) -> Unit) {
             binding.tvEventTitle.text = event.name
             binding.tvEventDate.text = event.startDate?.let { dateFormat.format(it) } ?: "Próximamente"
             binding.tvEventLocation.text = event.visibility.replaceFirstChar { it.uppercase() }
 
+            // Show summary if participating
+            binding.tvEventParticipantSummary.visibility = if (event.isUserParticipating) android.view.View.VISIBLE else android.view.View.GONE
+
             binding.root.setOnClickListener { 
                 onEventClick(event) 
-            }
-            
-            binding.root.setOnLongClickListener {
-                onJoinClick?.invoke(event)
-                onJoinClick != null
             }
         }
     }

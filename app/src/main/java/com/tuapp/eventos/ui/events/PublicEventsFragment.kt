@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -25,19 +24,14 @@ class PublicEventsFragment : Fragment() {
 
     private val viewModel: EventViewModel by viewModels()
 
-    private val eventAdapter = EventAdapter(
-        onEventClick = { event ->
-            val bundle = Bundle().apply {
-                putString("eventId", event.id)
-                putString("eventTitle", event.name)
-                putString("eventDescription", event.description)
-            }
-            findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
-        },
-        onJoinClick = { event ->
-            showJoinConfirmation(event)
+    private val eventAdapter = EventAdapter { event ->
+        val bundle = Bundle().apply {
+            putString("eventId", event.id)
+            putString("eventTitle", event.name)
+            putString("eventDescription", event.description)
         }
-    )
+        findNavController().navigate(R.id.action_global_eventDetailFragment, bundle)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,7 +48,8 @@ class PublicEventsFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
         
-        viewModel.loadPublicEvents()
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        viewModel.loadPublicEvents(userId)
         
         binding.fabAddEvent.setOnClickListener {
             findNavController().navigate(R.id.action_global_createEventFragment)
@@ -91,40 +86,6 @@ class PublicEventsFragment : Fragment() {
                 }
             }
         }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.joinEventState.collectLatest { state ->
-                when (state) {
-                    is EventViewModel.JoinEventState.Loading -> {
-                    }
-                    is EventViewModel.JoinEventState.Success -> {
-                        Toast.makeText(context, "Te has unido al evento", Toast.LENGTH_SHORT).show()
-                        viewModel.resetJoinState()
-                        // Move to joined events or just refresh?
-                        findNavController().navigate(R.id.joinedEventsFragment)
-                    }
-                    is EventViewModel.JoinEventState.Error -> {
-                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                        viewModel.resetJoinState()
-                    }
-                    else -> {}
-                }
-            }
-        }
-    }
-
-    private fun showJoinConfirmation(event: com.tuapp.eventos.domain.model.Event) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Unirse al evento")
-            .setMessage("¿Quieres participar en '${event.name}'?")
-            .setPositiveButton("Sí") { _, _ ->
-                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
-                if (userId != null && event.id != null) {
-                    viewModel.joinEvent(event.id, userId)
-                }
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
     }
 
     override fun onDestroyView() {

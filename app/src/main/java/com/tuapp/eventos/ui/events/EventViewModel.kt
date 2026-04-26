@@ -6,6 +6,7 @@ import com.tuapp.eventos.data.repository.EventRepository
 import com.tuapp.eventos.data.repository.EventRepositoryImpl
 import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.Role
+import com.tuapp.eventos.domain.model.GroupMember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,11 +25,32 @@ class EventViewModel : ViewModel() {
     private val _joinEventState = MutableStateFlow<JoinEventState>(JoinEventState.Idle)
     val joinEventState: StateFlow<JoinEventState> = _joinEventState.asStateFlow()
 
-    fun loadPublicEvents() {
+    private val _isParticipating = MutableStateFlow<Boolean>(false)
+    val isParticipating: StateFlow<Boolean> = _isParticipating.asStateFlow()
+
+    private val _participants = MutableStateFlow<List<GroupMember>>(emptyList())
+    val participants: StateFlow<List<GroupMember>> = _participants.asStateFlow()
+
+    fun loadPublicEvents(currentUserId: String?) {
         viewModelScope.launch {
             _eventsState.value = EventsState.Loading
             repository.getEvents().collect { allEvents ->
-                _eventsState.value = EventsState.Success(allEvents.filter { it.visibility == "public" })
+                val publicEvents = allEvents.filter { it.visibility == "public" }
+                
+                if (currentUserId != null) {
+                    val participatingResult = repository.getParticipatingEventIds(currentUserId)
+                    if (participatingResult.isSuccess) {
+                        val joinedIds = participatingResult.getOrThrow()
+                        val updatedEvents = publicEvents.map { 
+                            it.copy(isUserParticipating = joinedIds.contains(it.id))
+                        }
+                        _eventsState.value = EventsState.Success(updatedEvents)
+                    } else {
+                        _eventsState.value = EventsState.Success(publicEvents)
+                    }
+                } else {
+                    _eventsState.value = EventsState.Success(publicEvents)
+                }
             }
         }
     }
@@ -36,8 +58,13 @@ class EventViewModel : ViewModel() {
     fun loadJoinedEvents(userId: String) {
         viewModelScope.launch {
             _eventsState.value = EventsState.Loading
+            val participatingResult = repository.getParticipatingEventIds(userId)
+            val joinedIds = if (participatingResult.isSuccess) participatingResult.getOrThrow() else emptyList()
+
             repository.getEvents().collect { allEvents ->
-                _eventsState.value = EventsState.Success(allEvents.filter { it.createdBy == userId })
+                val joinedEvents = allEvents.filter { it.createdBy == userId || joinedIds.contains(it.id) }
+                    .map { it.copy(isUserParticipating = true) }
+                _eventsState.value = EventsState.Success(joinedEvents)
             }
         }
     }
@@ -47,6 +74,24 @@ class EventViewModel : ViewModel() {
             _eventsState.value = EventsState.Loading
             repository.getEventsByGroup(groupId).collect { events ->
                 _eventsState.value = EventsState.Success(events)
+            }
+        }
+    }
+
+    fun loadParticipants(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.getEventParticipants(eventId)
+            if (result.isSuccess) {
+                _participants.value = result.getOrThrow()
+            }
+        }
+    }
+
+    fun checkParticipation(eventId: String, userId: String) {
+        viewModelScope.launch {
+            val result = repository.isUserParticipating(eventId, userId)
+            if (result.isSuccess) {
+                _isParticipating.value = result.getOrThrow()
             }
         }
     }
@@ -63,14 +108,21 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    fun joinEvent(eventId: String, userId: String) {
+    fun toggleParticipation(eventId: String, userId: String, isJoining: Boolean) {
         viewModelScope.launch {
             _joinEventState.value = JoinEventState.Loading
-            val result = repository.joinEvent(eventId, userId)
+            val result = if (isJoining) {
+                repository.joinEvent(eventId, userId)
+            } else {
+                repository.leaveEvent(eventId, userId)
+            }
+            
             if (result.isSuccess) {
                 _joinEventState.value = JoinEventState.Success
+                _isParticipating.value = isJoining
+                loadParticipants(eventId) // Refresh participants count/list
             } else {
-                _joinEventState.value = JoinEventState.Error(result.exceptionOrNull()?.message ?: "Error al unirse")
+                _joinEventState.value = JoinEventState.Error(result.exceptionOrNull()?.message ?: "Error de participación")
             }
         }
     }

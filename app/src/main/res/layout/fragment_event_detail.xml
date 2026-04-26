@@ -82,20 +82,14 @@
             android:layout_marginBottom="16dp"
             android:paddingHorizontal="8dp">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAttendance"
-                style="@style/Widget.Material3.Chip.Filter"
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbParticipateDetail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Asistiré"
-                app:chipIcon="@android:drawable/checkbox_on_background"
-                app:chipIconVisible="true"
-                app:chipBackgroundColor="#E3F2FD"
-                app:chipStrokeWidth="0dp"
+                android:text="Participar en este evento"
                 android:textColor="#1565C0"
-                app:chipIconTint="#1565C0"
-                android:checkable="true"
-                android:checked="true"/>
+                android:buttonTint="#1565C0"
+                android:textStyle="bold" />
 
             <View
                 android:layout_width="0dp"
