@@ -29,7 +29,16 @@ class CreateEventFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: EventViewModel by viewModels()
-    private val rolesAdapter = RoleAdapter { /* no-op click */ }
+    private val rolesAdapter: RoleAdapter by lazy {
+        RoleAdapter(
+            onRoleClick = { /* no-op click */ },
+            onDeleteClick = { role ->
+                createdRoles.remove(role)
+                rolesAdapter.submitList(createdRoles.toList())
+                updateRolesVisibility()
+            }
+        )
+    }
     private val createdRoles = mutableListOf<Role>()
 
     override fun onCreateView(
@@ -154,9 +163,24 @@ class CreateEventFragment : Fragment() {
             .setView(dialogBinding.root)
             .create()
 
-        val icons = listOf("Fotógrafo", "DJ", "Seguridad", "Catering", "Limpieza")
+        // Configurar dropdown de iconos
+        val icons = listOf("Logística", "Catering", "Música", "Invitados", "Limpieza", "Fotografía", "Decoración", "Seguridad")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, icons)
         dialogBinding.acRoleIcon.setAdapter(adapter)
+
+        // Configurar selección de color (similar a AddRoleFragment)
+        var selectedColor = "#1565C0"
+        val colors = listOf("#1565C0", "#1E88E5", "#43A047", "#E53935", "#FB8C00", "#8E24AA")
+        dialogBinding.llColorContainer.removeAllViews()
+        colors.forEach { colorStr ->
+            val colorView = View(requireContext()).apply {
+                val size = (32 * resources.displayMetrics.density).toInt()
+                layoutParams = ViewGroup.MarginLayoutParams(size, size).apply { setMargins(8, 8, 8, 8) }
+                setBackgroundColor(android.graphics.Color.parseColor(colorStr))
+                setOnClickListener { selectedColor = colorStr }
+            }
+            dialogBinding.llColorContainer.addView(colorView)
+        }
 
         dialogBinding.btnCancel.setOnClickListener {
             dialog.dismiss()
@@ -164,8 +188,22 @@ class CreateEventFragment : Fragment() {
 
         dialogBinding.btnConfirm.setOnClickListener {
             val roleName = dialogBinding.etRoleName.text.toString().trim()
+            val description = dialogBinding.etRoleTasks.text.toString().trim()
+            val min = dialogBinding.etMinPeople.text.toString().toIntOrNull()
+            val max = dialogBinding.etMaxPeople.text.toString().toIntOrNull()
+            val mandatory = dialogBinding.cbIsMandatory.isChecked
+            val icon = dialogBinding.acRoleIcon.text.toString()
+
             if (roleName.isNotBlank()) {
-                val newRole = Role(name = roleName, description = "Rol del evento")
+                val newRole = Role(
+                    name = roleName, 
+                    description = description,
+                    minPeople = min,
+                    maxPeople = max,
+                    isMandatory = mandatory,
+                    icon = icon,
+                    color = selectedColor
+                )
                 createdRoles.add(newRole)
                 rolesAdapter.submitList(createdRoles.toList())
                 updateRolesVisibility()

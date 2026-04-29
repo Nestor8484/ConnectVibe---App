@@ -24,7 +24,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_revert"
+                android:src="@drawable/ic_back"
                 app:layout_constraintBottom_toBottomOf="@id/tvProfileTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@id/tvProfileTitle"
@@ -86,10 +86,11 @@
                         android:layout_width="140dp"
                         android:layout_height="140dp"
                         android:padding="4dp"
-                        android:src="@android:drawable/ic_menu_myplaces"
+                        android:src="@drawable/ic_profile"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                        app:strokeColor="#1565C0"
+                        app:strokeColor="?attr/colorPrimary"
                         app:strokeWidth="4dp"
+                        app:tint="@color/md_theme_onSurfaceVariant"
                         android:contentDescription="@string/profile_picture" />
 
                     <TextView
@@ -118,7 +119,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/settings"
-                android:textColor="#1565C0"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginStart="8dp"
@@ -148,7 +149,7 @@
                         android:textAlignment="viewStart"
                         android:paddingHorizontal="16dp"
                         app:icon="@android:drawable/ic_menu_manage"
-                        app:iconTint="#1565C0"
+                        app:iconTint="?attr/colorPrimary"
                         android:textColor="@color/md_theme_onSurface"/>
 
                     <View
@@ -167,8 +168,42 @@
                         android:textAlignment="viewStart"
                         android:paddingHorizontal="16dp"
                         app:icon="@android:drawable/ic_popup_reminder"
-                        app:iconTint="#1565C0"
+                        app:iconTint="?attr/colorPrimary"
                         android:textColor="@color/md_theme_onSurface"/>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/md_theme_outlineVariant" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/ic_menu_day"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="16dp"
+                            android:text="@string/dark_mode"
+                            android:textSize="16sp"
+                            android:textColor="@color/md_theme_onSurface" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchDarkMode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"

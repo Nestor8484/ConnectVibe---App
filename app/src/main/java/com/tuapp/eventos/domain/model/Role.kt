@@ -14,6 +14,16 @@ data class Role(
     val name: String,
     @SerialName("description")
     val description: String? = null,
+    @SerialName("max_people")
+    val maxPeople: Int? = null,
+    @SerialName("min_people")
+    val minPeople: Int? = null,
+    @SerialName("is_mandatory")
+    val isMandatory: Boolean = false,
+    @SerialName("icon")
+    val icon: String? = null,
+    @SerialName("color")
+    val color: String? = null,
     @Serializable(with = TimestampSerializer::class)
     @SerialName("created_at")
     val createdAt: Date? = null

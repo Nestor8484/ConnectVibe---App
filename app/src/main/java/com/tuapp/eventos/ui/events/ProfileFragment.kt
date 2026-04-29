@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentProfileBinding
+import com.tuapp.eventos.utils.ThemeManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -29,8 +30,11 @@ class ProfileFragment : Fragment() {
         return binding.root
     }
 
+    private lateinit var themeManager: ThemeManager
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        themeManager = ThemeManager(requireContext())
         
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
@@ -47,9 +51,19 @@ class ProfileFragment : Fragment() {
         binding.btnNotifications.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_notificationsFragment)
         }
+
+        setupDarkModeToggle()
         
         observeProfile()
         observeLogout()
+    }
+
+    private fun setupDarkModeToggle() {
+        binding.switchDarkMode.isChecked = themeManager.isDarkMode()
+
+        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
+            themeManager.setDarkMode(isChecked)
+        }
     }
 
     private fun observeLogout() {

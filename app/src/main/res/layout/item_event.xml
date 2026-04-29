@@ -6,10 +6,10 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="24dp"
     android:layout_marginVertical="8dp"
-    app:cardBackgroundColor="#E3F2FD"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:strokeColor="#1E88E5"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -26,15 +26,15 @@
             android:src="@android:drawable/ic_menu_today"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="#1565C0" />
+            app:tint="?attr/colorPrimary" />
 
         <TextView
             android:id="@+id/tvEventTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:textColor="#0D47A1"
-            android:textSize="20sp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/ivEventIcon"
@@ -46,7 +46,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="#1565C0"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@id/tvEventTitle"
@@ -59,27 +59,26 @@
             android:layout_marginTop="12dp"
             android:background="@drawable/bg_dot_outline"
             android:gravity="center_vertical"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
             app:layout_constraintStart_toStartOf="@id/tvEventLocation"
             app:layout_constraintTop_toBottomOf="@id/tvEventLocation">
 
             <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:src="@android:drawable/ic_menu_share"
-                app:tint="#1565C0" />
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_check_circle"
+                app:tint="?attr/colorPrimary" />
 
             <TextView
                 android:id="@+id/tvEventParticipantSummary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="8dp"
                 android:text="Asistiendo"
-                android:textColor="#1565C0"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:visibility="gone"/>
+                android:textColor="?attr/colorPrimary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView

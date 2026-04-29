@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="24dp"
-    app:cardElevation="0dp">
+    app:cardElevation="0dp"
+    android:backgroundTint="@color/md_theme_surface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,10 +19,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAlignment="center"
-            android:textColor="@color/md_theme_onSurface"
+            android:textColor="#1565C0"
             android:textSize="24sp"
             android:textStyle="bold"
             tools:text="Nombre del Rol" />
+
+        <TextView
+            android:id="@+id/tvRoleStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_dot_outline"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:text="Obligatorio"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/tvDialogRoleDescription"
@@ -31,23 +48,82 @@
             android:textAlignment="center"
             android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="16sp"
-            tools:text="Descripción detallada de lo que este rol implica y las responsabilidades que conlleva." />
+            tools:text="Descripción detallada de lo que este rol implica." />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mínimo"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvMinPeople"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1"
+                    android:textColor="@color/md_theme_onSurface"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Máximo"
+                    android:textColor="@color/md_theme_onSurfaceVariant"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvMaxPeople"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="5"
+                    android:textColor="@color/md_theme_onSurface"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
+            android:id="@+id/tvLabelMembers"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Tareas asignadas:"
+            android:text="Personas asignadas:"
             android:textColor="@color/md_theme_onSurface"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tvDialogTasks"
+            android:id="@+id/tvAssignedMembers"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@color/md_theme_onSurfaceVariant"
-            tools:text="• Tarea 1\n• Tarea 2\n• Tarea 3" />
+            android:textColor="#1565C0"
+            android:textStyle="italic"
+            tools:text="Juan Pérez, María García" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAssign"
@@ -56,14 +132,30 @@
             android:layout_marginTop="32dp"
             android:paddingVertical="12dp"
             android:text="Asignarme a este rol"
+            android:backgroundTint="#1565C0"
             app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditRole"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Editar Rol (Admin)"
+            android:textColor="#1565C0"
+            app:strokeColor="#1565C0"
+            app:cornerRadius="12dp"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnClose"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cerrar" />
+            android:layout_marginTop="4dp"
+            android:text="Cancelar"
+            android:textColor="@color/md_theme_onSurfaceVariant" />
 
     </LinearLayout>
 

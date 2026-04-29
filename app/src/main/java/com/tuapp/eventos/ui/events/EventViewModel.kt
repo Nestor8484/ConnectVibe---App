@@ -7,6 +7,7 @@ import com.tuapp.eventos.data.repository.EventRepositoryImpl
 import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.Role
 import com.tuapp.eventos.domain.model.GroupMember
+import com.tuapp.eventos.domain.model.EventRoleMember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,18 @@ class EventViewModel : ViewModel() {
 
     private val _participants = MutableStateFlow<List<GroupMember>>(emptyList())
     val participants: StateFlow<List<GroupMember>> = _participants.asStateFlow()
+
+    private val _roles = MutableStateFlow<List<Role>>(emptyList())
+    val roles: StateFlow<List<Role>> = _roles.asStateFlow()
+
+    private val _event = MutableStateFlow<Event?>(null)
+    val event: StateFlow<Event?> = _event.asStateFlow()
+
+    private val _roleOpState = MutableStateFlow<RoleOpState>(RoleOpState.Idle)
+    val roleOpState: StateFlow<RoleOpState> = _roleOpState.asStateFlow()
+
+    private val _roleMembers = MutableStateFlow<List<EventRoleMember>>(emptyList())
+    val roleMembers: StateFlow<List<EventRoleMember>> = _roleMembers.asStateFlow()
 
     fun loadPublicEvents(currentUserId: String?) {
         viewModelScope.launch {
@@ -87,6 +100,156 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun loadRoles(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.getRoles(eventId)
+            if (result.isSuccess) {
+                _roles.value = result.getOrThrow()
+            }
+            loadRoleMembers(eventId)
+        }
+    }
+
+    private fun loadRoleMembers(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.getRoleMembers(eventId)
+            if (result.isSuccess) {
+                _roleMembers.value = result.getOrThrow()
+            }
+        }
+    }
+
+    fun toggleRoleAssignment(roleId: String, userId: String, eventId: String, isAssigning: Boolean) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = if (isAssigning) {
+                repository.assignRoleToUser(roleId, userId, eventId)
+            } else {
+                repository.removeRoleFromUser(roleId, userId)
+            }
+
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                loadRoleMembers(eventId)
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al asignar rol")
+            }
+        }
+    }
+
+    fun loadEvent(eventId: String) {
+        viewModelScope.launch {
+            val event = repository.getEventById(eventId)
+            _event.value = event
+        }
+    }
+
+    fun createRole(role: Role) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = repository.createRole(role)
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                role.eventId?.let { loadRoles(it) }
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al crear rol")
+            }
+        }
+    }
+
+    fun updateRole(role: Role) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = repository.updateRole(role)
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                role.eventId?.let { loadRoles(it) }
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar rol")
+            }
+        }
+    }
+
+    fun deleteRole(roleId: String, eventId: String) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = repository.deleteRole(roleId)
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                loadRoles(eventId)
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar rol")
+            }
+        }
+    }
+
+    fun startEvent(eventId: String, autoAssign: Boolean = false) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            
+            if (autoAssign) {
+                performAutoAssignment(eventId)
+            }
+
+            val result = repository.updateEventStatus(eventId, "started")
+            if (result.isSuccess) {
+                loadEvent(eventId)
+                _roleOpState.value = RoleOpState.Success
+            } else {
+                _roleOpState.value = RoleOpState.Error("Error al iniciar evento")
+            }
+        }
+    }
+
+    private suspend fun performAutoAssignment(eventId: String) {
+        val currentRoles = _roles.value
+        val currentMembers = _roleMembers.value
+        val allParticipants = _participants.value
+        
+        val newAssignments = mutableListOf<EventRoleMember>()
+        
+        // 1. Identificar roles que necesitan gente
+        for (role in currentRoles) {
+            val minNeeded = role.minPeople ?: if (role.isMandatory) 1 else 0
+            val currentAssignedCount = currentMembers.count { it.roleId == role.id }
+            
+            if (currentAssignedCount < minNeeded) {
+                val needed = minNeeded - currentAssignedCount
+                
+                // 2. Buscar candidatos (priorizando los que no tienen roles obligatorios)
+                val candidates = allParticipants.filter { participant ->
+                    // No está ya en este rol
+                    currentMembers.none { it.roleId == role.id && it.userId == participant.userId }
+                }.sortedBy { participant ->
+                    // Prioridad: menos roles asignados actualmente
+                    currentMembers.count { it.userId == participant.userId }
+                }
+
+                candidates.take(needed).forEach { candidate ->
+                    newAssignments.add(EventRoleMember(
+                        roleId = role.id!!,
+                        userId = candidate.userId,
+                        eventId = eventId
+                    ))
+                }
+            }
+        }
+
+        if (newAssignments.isNotEmpty()) {
+            repository.assignMultipleRoles(newAssignments)
+            loadRoleMembers(eventId)
+        }
+    }
+
+    fun finishEvent(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.updateEventStatus(eventId, "finished")
+            if (result.isSuccess) {
+                loadEvent(eventId)
+            }
+        }
+    }
+
     fun checkParticipation(eventId: String, userId: String) {
         viewModelScope.launch {
             val result = repository.isUserParticipating(eventId, userId)
@@ -108,7 +271,11 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    fun toggleParticipation(eventId: String, userId: String, isJoining: Boolean) {
+    fun toggleParticipation(eventId: String, userId: String, isJoining: Boolean, isOwner: Boolean = false) {
+        if (!isJoining && isOwner) {
+            _joinEventState.value = JoinEventState.Error("El creador no puede abandonar el evento")
+            return
+        }
         viewModelScope.launch {
             _joinEventState.value = JoinEventState.Loading
             val result = if (isJoining) {
@@ -135,6 +302,10 @@ class EventViewModel : ViewModel() {
         _joinEventState.value = JoinEventState.Idle
     }
 
+    fun resetRoleOpState() {
+        _roleOpState.value = RoleOpState.Idle
+    }
+
     sealed class EventsState {
         object Loading : EventsState()
         data class Success(val events: List<Event>) : EventsState()
@@ -153,5 +324,12 @@ class EventViewModel : ViewModel() {
         object Loading : JoinEventState()
         object Success : JoinEventState()
         data class Error(val message: String) : JoinEventState()
+    }
+
+    sealed class RoleOpState {
+        object Idle : RoleOpState()
+        object Loading : RoleOpState()
+        object Success : RoleOpState()
+        data class Error(val message: String) : RoleOpState()
     }
 }

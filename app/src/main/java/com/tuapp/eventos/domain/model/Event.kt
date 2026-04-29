@@ -111,6 +111,9 @@ data class Event(
     
     @SerialName("settings")
     val settings: EventSettings? = EventSettings(),
+
+    @SerialName("status")
+    val status: String = "pending", // "pending", "started", "finished"
     
     // UI temporary state (Transient - not sent to DB)
     @kotlinx.serialization.Transient

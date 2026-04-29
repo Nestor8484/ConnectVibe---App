@@ -2,14 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/joinedEventsFragment"
-        android:icon="@android:drawable/ic_menu_agenda"
+        android:icon="@drawable/ic_events"
         android:title="@string/joined_label" />
     <item
         android:id="@+id/privateEventsFragment"
-        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:icon="@drawable/ic_groups"
         android:title="@string/private_label" />
     <item
         android:id="@+id/publicEventsFragment"
-        android:icon="@android:drawable/ic_menu_mapmode"
+        android:icon="@drawable/ic_public"
         android:title="@string/public_label" />
 </menu>

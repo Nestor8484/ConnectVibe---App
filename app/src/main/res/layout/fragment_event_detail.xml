@@ -24,7 +24,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_revert"
+                android:src="@drawable/ic_back"
                 app:layout_constraintBottom_toBottomOf="@id/tvEventTitleContainer"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@id/tvEventTitleContainer"
@@ -55,7 +55,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="6dp"
-                android:src="@android:drawable/ic_menu_myplaces"
+                android:src="@drawable/ic_profile"
                 app:layout_constraintBottom_toBottomOf="@id/tvEventTitleContainer"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/tvEventTitleContainer"
@@ -87,8 +87,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Participar en este evento"
-                android:textColor="#1565C0"
-                android:buttonTint="#1565C0"
+                android:textColor="?attr/colorPrimary"
+                android:buttonTint="?attr/colorPrimary"
                 android:textStyle="bold" />
 
             <View
@@ -108,8 +108,8 @@
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    android:src="@android:drawable/ic_menu_share"
-                    app:tint="#1565C0"/>
+                    android:src="@drawable/ic_groups"
+                    app:tint="?attr/colorPrimary"/>
 
                 <TextView
                     android:id="@+id/tvParticipantCount"
@@ -118,7 +118,7 @@
                     android:text="12 participantes"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="#1565C0"
+                    android:textColor="?attr/colorPrimary"
                     android:layout_marginStart="6dp"/>
             </LinearLayout>
 
@@ -128,7 +128,7 @@
             android:id="@+id/tvEventDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             android:textAlignment="center"
             android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="18sp"
@@ -146,8 +146,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@android:color/transparent"
-                app:tabIndicatorColor="#1565C0"
-                app:tabSelectedTextColor="#1565C0"
+                app:tabIndicatorColor="?attr/colorPrimary"
+                app:tabSelectedTextColor="?attr/colorPrimary"
                 app:tabTextColor="@color/md_theme_onSurfaceVariant"
                 app:tabTextAppearance="@style/TextAppearance.Material3.TitleSmall" />
 
@@ -189,7 +189,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp"
-                            app:cardBackgroundColor="#E3F2FD"
+                            app:cardBackgroundColor="?attr/colorSecondaryContainer"
                             app:cardCornerRadius="16dp"
                             app:strokeWidth="0dp">
                             <LinearLayout
@@ -208,14 +208,14 @@
                                         android:layout_height="wrap_content"
                                         android:text="Gasto Total"
                                         android:textSize="12sp"
-                                        android:textColor="#1565C0"/>
+                                        android:textColor="?attr/colorOnSecondaryContainer"/>
                                     <TextView
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:text="275.50€"
                                         android:textSize="20sp"
                                         android:textStyle="bold"
-                                        android:textColor="#0D47A1"/>
+                                        android:textColor="?attr/colorOnSecondaryContainer"/>
                                 </LinearLayout>
                                 <LinearLayout
                                     android:layout_width="0dp"
@@ -227,14 +227,14 @@
                                         android:layout_height="wrap_content"
                                         android:text="Roles Cubiertos"
                                         android:textSize="12sp"
-                                        android:textColor="#1565C0"/>
+                                        android:textColor="?attr/colorOnSecondaryContainer"/>
                                     <TextView
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:text="3 de 5"
                                         android:textSize="20sp"
                                         android:textStyle="bold"
-                                        android:textColor="#0D47A1"/>
+                                        android:textColor="?attr/colorOnSecondaryContainer"/>
                                 </LinearLayout>
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>
@@ -243,7 +243,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Gastos por Categoría"
-                            android:textColor="#1565C0"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:layout_marginBottom="8dp"/>
@@ -348,6 +348,17 @@
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddRole"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:visibility="gone"
+        app:backgroundTint="#1565C0"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:tint="@android:color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddExpense"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -357,5 +368,17 @@
         app:backgroundTint="#1565C0"
         app:srcCompat="@android:drawable/ic_input_add"
         app:tint="@android:color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabEventAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="24dp"
+        android:visibility="gone"
+        app:backgroundTint="#1565C0"
+        app:srcCompat="@android:drawable/ic_media_play"
+        app:tint="@android:color/white"
+        tools:visibility="visible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

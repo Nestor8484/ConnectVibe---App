@@ -3,6 +3,7 @@ package com.tuapp.eventos.data.repository
 import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.EventMember
+import com.tuapp.eventos.domain.model.EventRoleMember
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
 import com.tuapp.eventos.domain.model.GroupMember
@@ -69,7 +70,7 @@ class EventRepositoryImpl : EventRepository {
                 eventId = eventId,
                 userId = event.createdBy,
                 isAdmin = true,
-                status = "joined"
+                status = "active"
             )
             client.from("event_members").insert(ownerMember)
 
@@ -186,6 +187,120 @@ class EventRepositoryImpl : EventRepository {
             Result.success(participants)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error getting participants: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getRoles(eventId: String): Result<List<Role>> {
+        return try {
+            val roles = client.from("event_roles")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                    }
+                }
+                .decodeList<Role>()
+            Result.success(roles)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createRole(role: Role): Result<Unit> {
+        return try {
+            client.from("event_roles").insert(role)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateRole(role: Role): Result<Unit> {
+        return try {
+            client.from("event_roles").update(role) {
+                filter {
+                    eq("id", role.id ?: "")
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteRole(roleId: String): Result<Unit> {
+        return try {
+            client.from("event_roles").delete {
+                filter {
+                    eq("id", roleId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun assignRoleToUser(roleId: String, userId: String, eventId: String): Result<Unit> {
+        return try {
+            val roleMember = EventRoleMember(
+                roleId = roleId,
+                userId = userId,
+                eventId = eventId
+            )
+            client.from("event_role_members").insert(roleMember)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error assigning role: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun removeRoleFromUser(roleId: String, userId: String): Result<Unit> {
+        return try {
+            client.from("event_role_members").delete {
+                filter {
+                    eq("role_id", roleId)
+                    eq("user_id", userId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getRoleMembers(eventId: String): Result<List<EventRoleMember>> {
+        return try {
+            val members = client.from("event_role_members")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                    }
+                }
+                .decodeList<EventRoleMember>()
+            Result.success(members)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateEventStatus(eventId: String, status: String): Result<Unit> {
+        return try {
+            client.from("events").update(mapOf("status" to status)) {
+                filter { eq("id", eventId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun assignMultipleRoles(assignments: List<EventRoleMember>): Result<Unit> {
+        return try {
+            client.from("event_role_members").insert(assignments)
+            Result.success(Unit)
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

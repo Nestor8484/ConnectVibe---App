@@ -21,6 +21,7 @@ import com.tuapp.eventos.databinding.FragmentEventDetailBinding
 import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
+import com.tuapp.eventos.domain.model.MemberRole
 import com.tuapp.eventos.ui.events.EventViewModel
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
@@ -36,10 +37,19 @@ class EventDetailFragment : Fragment() {
     private val viewModel: EventViewModel by viewModels()
     private var isPieChart = true
     private var currentEventId: String? = null
+    private var isUserAdmin = false
 
-    private val roleAdapter = RoleAdapter { role ->
-        showRoleDetailDialog(role)
-    }
+    private val roleAdapter = RoleAdapter(
+        onRoleClick = { role -> 
+            if (isUserAdmin && viewModel.event.value?.status == "pending") {
+                val addRoleFragment = AddRoleFragment.newInstance(currentEventId ?: "", role)
+                addRoleFragment.show(childFragmentManager, "AddRoleFragment")
+            } else {
+                showRoleDetailDialog(role) 
+            }
+        },
+        onDeleteClick = { role -> showDeleteRoleDialog(role) }
+    )
     
     private val expenseAdapter = ExpenseAdapter { expense ->
         showExpenseDetailDialog(expense)
@@ -88,26 +98,136 @@ class EventDetailFragment : Fragment() {
             showCreateExpenseDialog()
         }
 
+        binding.fabAddRole.setOnClickListener {
+            currentEventId?.let { id ->
+                AddRoleFragment.newInstance(id).show(childFragmentManager, "AddRoleFragment")
+            }
+        }
+
         binding.btnToggleChartType.setOnClickListener {
             toggleChart()
+        }
+
+        binding.fabEventAction.setOnClickListener {
+            handleStatusAction()
         }
 
         binding.cbParticipateDetail.setOnClickListener {
             val isChecked = binding.cbParticipateDetail.isChecked
             val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+            val currentEvent = viewModel.event.value
+            val isOwner = currentEvent?.createdBy == userId
+            
             if (currentEventId != null && userId != null) {
-                viewModel.toggleParticipation(currentEventId!!, userId, isChecked)
+                viewModel.toggleParticipation(currentEventId!!, userId, isChecked, isOwner)
             }
         }
         
         // Initial data load
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
         if (currentEventId != null) {
+            viewModel.loadEvent(currentEventId!!)
             viewModel.loadParticipants(currentEventId!!)
+            viewModel.loadRoles(currentEventId!!)
             if (userId != null) {
                 viewModel.checkParticipation(currentEventId!!, userId)
+                checkAdminStatus(userId)
             }
         }
+    }
+
+    private fun checkAdminStatus(userId: String) {
+        // Logic to check if user is admin of the event
+        // For now, let's assume if they created the event or based on participation
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.participants.collectLatest { participants ->
+                val member = participants.find { it.userId == userId }
+                isUserAdmin = member?.role == MemberRole.ADMIN
+                updateAdminUi()
+            }
+        }
+    }
+
+    private fun updateAdminUi() {
+        val currentEvent = viewModel.event.value
+        val status = currentEvent?.status ?: "pending"
+        
+        if (binding.tabLayout.selectedTabPosition == 0) {
+            binding.fabAddRole.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
+        }
+        
+        if (isUserAdmin) {
+            binding.fabEventAction.visibility = View.VISIBLE
+            when (status) {
+                "pending" -> {
+                    binding.fabEventAction.setImageResource(android.R.drawable.ic_media_play)
+                    binding.fabEventAction.contentDescription = "Iniciar Evento"
+                }
+                "started" -> {
+                    binding.fabEventAction.setImageResource(android.R.drawable.ic_menu_save)
+                    binding.fabEventAction.contentDescription = "Finalizar Evento"
+                }
+                "finished" -> {
+                    binding.fabEventAction.visibility = View.GONE
+                }
+            }
+        } else {
+            binding.fabEventAction.visibility = View.GONE
+        }
+
+        roleAdapter.setAdminStatus(isUserAdmin && status == "pending")
+        
+        binding.cbParticipateDetail.isEnabled = !isUserAdmin
+        binding.cbParticipateDetail.alpha = if (isUserAdmin) 0.6f else 1.0f
+    }
+
+    private fun handleStatusAction() {
+        val currentEvent = viewModel.event.value ?: return
+        val status = currentEvent.status
+
+        when (status) {
+            "pending" -> checkRolesAndStart()
+            "started" -> showFinishConfirmation()
+        }
+    }
+
+    private fun checkRolesAndStart() {
+        val roles = viewModel.roles.value
+        val members = viewModel.roleMembers.value
+        
+        val rolesIncomplete = roles.filter { role ->
+            val minNeeded = role.minPeople ?: if (role.isMandatory) 1 else 0
+            val currentCount = members.count { it.roleId == role.id }
+            currentCount < minNeeded
+        }
+
+        if (rolesIncomplete.isNotEmpty()) {
+            MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+                .setTitle("Roles incompletos")
+                .setMessage("Hay roles obligatorios o con un mínimo de personas que aún no están cubiertos. ¿Quieres que el sistema asigne automáticamente a los participantes disponibles?")
+                .setNegativeButton("No, empezar así") { _, _ ->
+                    currentEventId?.let { viewModel.startEvent(it, autoAssign = false) }
+                }
+                .setNeutralButton("Cancelar", null)
+                .setPositiveButton("Auto-asignar y empezar") { _, _ ->
+                    currentEventId?.let { viewModel.startEvent(it, autoAssign = true) }
+                }
+                .show()
+                .window?.setBackgroundDrawableResource(android.R.color.transparent)
+        } else {
+            currentEventId?.let { viewModel.startEvent(it, autoAssign = false) }
+        }
+    }
+
+    private fun showFinishConfirmation() {
+        MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+            .setTitle("Finalizar Evento")
+            .setMessage("¿Estás seguro de que quieres finalizar el evento? Esta acción es irreversible y moverá el evento a tu historial. Ya no se podrán realizar más cambios.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Finalizar") { _, _ ->
+                currentEventId?.let { viewModel.finishEvent(it) }
+            }
+            .show()
     }
 
     private fun observeViewModel() {
@@ -118,18 +238,18 @@ class EventDetailFragment : Fragment() {
                         binding.cbParticipateDetail.isEnabled = false
                     }
                     is EventViewModel.JoinEventState.Success -> {
-                        binding.cbParticipateDetail.isEnabled = true
+                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
                         Toast.makeText(context, "Estado de participación actualizado", Toast.LENGTH_SHORT).show()
                         viewModel.resetJoinState()
                     }
                     is EventViewModel.JoinEventState.Error -> {
-                        binding.cbParticipateDetail.isEnabled = true
+                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
                         binding.cbParticipateDetail.isChecked = !binding.cbParticipateDetail.isChecked
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         viewModel.resetJoinState()
                     }
                     else -> {
-                        binding.cbParticipateDetail.isEnabled = true
+                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
                     }
                 }
             }
@@ -144,6 +264,44 @@ class EventDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.participants.collectLatest { participants ->
                 binding.tvParticipantCount.text = "${participants.size} participantes"
+                // Re-check admin status when participants list is updated
+                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+                if (userId != null) {
+                    val member = participants.find { it.userId == userId }
+                    isUserAdmin = member?.role == MemberRole.ADMIN
+                    updateAdminUi()
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.event.collectLatest { event ->
+                event?.let {
+                    roleAdapter.setEventStatus(it.status)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.roles.collectLatest { roles ->
+                roleAdapter.submitList(roles)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.roleMembers.collectLatest { members ->
+                roleAdapter.setRoleMembers(members)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.roleOpState.collectLatest { state ->
+                if (state is EventViewModel.RoleOpState.Success) {
+                    viewModel.resetRoleOpState()
+                } else if (state is EventViewModel.RoleOpState.Error) {
+                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    viewModel.resetRoleOpState()
+                }
             }
         }
     }
@@ -165,6 +323,7 @@ class EventDetailFragment : Fragment() {
 
     private fun updateVisibility(position: Int) {
         binding.rvRoles.visibility = if (position == 0) View.VISIBLE else View.GONE
+        binding.fabAddRole.visibility = if (position == 0 && isUserAdmin) View.VISIBLE else View.GONE
         binding.rvExpenses.visibility = if (position == 1) View.VISIBLE else View.GONE
         binding.fabAddExpense.visibility = if (position == 1) View.VISIBLE else View.GONE
         binding.layoutDashboard.visibility = if (position == 2) View.VISIBLE else View.GONE
@@ -191,25 +350,81 @@ class EventDetailFragment : Fragment() {
 
         val tvName = dialogView.findViewById<TextView>(R.id.tvDialogRoleName)
         val tvDesc = dialogView.findViewById<TextView>(R.id.tvDialogRoleDescription)
-        val tvTasks = dialogView.findViewById<TextView>(R.id.tvDialogTasks)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tvRoleStatus)
+        val tvMin = dialogView.findViewById<TextView>(R.id.tvMinPeople)
+        val tvMax = dialogView.findViewById<TextView>(R.id.tvMaxPeople)
         val btnAssign = dialogView.findViewById<MaterialButton>(R.id.btnAssign)
+        val btnEdit = dialogView.findViewById<MaterialButton>(R.id.btnEditRole)
         val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnClose)
+        val tvLabelMembers = dialogView.findViewById<TextView>(R.id.tvLabelMembers)
+        val tvAssignedMembers = dialogView.findViewById<TextView>(R.id.tvAssignedMembers)
 
         tvName.text = role.name
         tvDesc.text = role.description
+        tvStatus.visibility = if (role.isMandatory) View.VISIBLE else View.GONE
+        tvMin.text = (role.minPeople ?: 0).toString()
+        tvMax.text = (role.maxPeople ?: "∞").toString()
         
-        val tasksText = when (role.name) {
-            "Logística" -> "• Alquilar furgoneta\n• Recoger sillas y mesas\n• Montar escenario"
-            "Catering" -> "• Comprar bebidas\n• Encargar canapés\n• Organizar mesa de comida"
-            "Música" -> "• Preparar lista Spotify\n• Llevar altavoces Bluetooth\n• Gestionar peticiones"
-            else -> "• Tarea de apoyo 1\n• Tarea de apoyo 2"
+        // Mostrar miembros asignados
+        val membersInRole = viewModel.roleMembers.value.filter { it.roleId == role.id }
+        if (membersInRole.isNotEmpty()) {
+            tvLabelMembers.visibility = View.VISIBLE
+            tvAssignedMembers.visibility = View.VISIBLE
+            
+            val memberNames = membersInRole.map { member ->
+                viewModel.participants.value.find { it.userId == member.userId }?.userName ?: "Usuario"
+            }.joinToString(", ")
+            
+            tvAssignedMembers.text = memberNames
+        } else {
+            tvLabelMembers.visibility = View.VISIBLE
+            tvAssignedMembers.text = "Nadie asignado aún"
         }
-        tvTasks.text = tasksText
 
-        btnAssign.setOnClickListener { dialog.dismiss() }
+        val currentUserId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        val isUserAssigned = membersInRole.any { it.userId == currentUserId }
+        
+        btnAssign.text = if (isUserAssigned) "Desasignarme" else "Asignarme"
+        btnAssign.setIconResource(if (isUserAssigned) android.R.drawable.ic_menu_close_clear_cancel else android.R.drawable.ic_input_add)
+
+        btnAssign.setOnClickListener { 
+            if (currentUserId != null && currentEventId != null) {
+                viewModel.toggleRoleAssignment(role.id!!, currentUserId, currentEventId!!, !isUserAssigned)
+                dialog.dismiss()
+            }
+        }
+        
+        val status = viewModel.event.value?.status ?: "pending"
+        btnEdit.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
+        btnEdit.setOnClickListener {
+            dialog.dismiss()
+            currentEventId?.let { id ->
+                AddRoleFragment.newInstance(id, role).show(childFragmentManager, "AddRoleFragment")
+            }
+        }
+
         btnClose.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
+
+        // Forzar ancho al 90%
+        val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
+    private fun showDeleteRoleDialog(role: Role) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Eliminar Rol")
+            .setMessage("¿Estás seguro de que quieres eliminar el rol \"${role.name}\"?")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Eliminar") { _, _ ->
+                currentEventId?.let { eventId ->
+                    role.id?.let { roleId ->
+                        viewModel.deleteRole(roleId, eventId)
+                    }
+                }
+            }
+            .show()
     }
 
     private fun showExpenseDetailDialog(expense: Expense) {
@@ -230,6 +445,10 @@ class EventDetailFragment : Fragment() {
         btnClose.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
+
+        // Forzar ancho al 90%
+        val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun showCreateExpenseDialog() {
@@ -263,20 +482,7 @@ class EventDetailFragment : Fragment() {
     }
 
     private fun loadData() {
-        // Placeholder roles for now
-        val dummyRoles = listOf(
-            Role(name = "Logística", description = "Encargado de transporte y materiales"),
-            Role(name = "Catering", description = "Gestión de comida y bebida"),
-            Role(name = "Música", description = "Encargado de la playlist y sonido")
-        )
-        roleAdapter.submitList(dummyRoles)
-
-        val dummyExpenses = listOf(
-            Expense("e1", "Bebidas Fiesta", 150.0, "u1", Date()),
-            Expense("e2", "Alquiler Sonido", 85.50, "u1", Date()),
-            Expense("e3", "Decoración Local", 40.0, "u1", Date())
-        )
-        expenseAdapter.submitList(dummyExpenses)
+        // Data is now loaded from ViewModel via observeViewModel
     }
 
     override fun onDestroyView() {

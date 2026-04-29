@@ -57,6 +57,7 @@
     <string name="add_member">Add Member</string>
     <string name="app_version_prefix">Version</string>
     <string name="back_button">Back</string>
+    <string name="dark_mode">Dark Mode</string>
     <string name="event_participants_label">Participants</string>
 
     <string name="category_food">Food</string>

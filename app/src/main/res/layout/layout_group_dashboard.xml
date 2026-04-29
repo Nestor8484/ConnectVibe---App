@@ -28,7 +28,7 @@
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
                 android:layout_margin="4dp"
-                app:cardBackgroundColor="#E3F2FD"
+                app:cardBackgroundColor="?attr/colorSecondaryContainer"
                 app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
                 <LinearLayout
@@ -36,8 +36,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/total_spent" android:textSize="10sp" android:textColor="#1565C0"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.240€" android:textSize="18sp" android:textStyle="bold" android:textColor="#0D47A1"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/total_spent" android:textSize="10sp" android:textColor="?attr/colorOnSecondaryContainer"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.240€" android:textSize="18sp" android:textStyle="bold" android:textColor="?attr/colorOnSecondaryContainer"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -46,7 +46,7 @@
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1"
                 android:layout_margin="4dp"
-                app:cardBackgroundColor="#E8F5E9"
+                app:cardBackgroundColor="?attr/colorTertiaryContainer"
                 app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
                 <LinearLayout
@@ -54,8 +54,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/tab_events" android:textSize="10sp" android:textColor="#2E7D32"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8" android:textSize="18sp" android:textStyle="bold" android:textColor="#1B5E20"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/tab_events" android:textSize="10sp" android:textColor="?attr/colorOnTertiaryContainer"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8" android:textSize="18sp" android:textStyle="bold" android:textColor="?attr/colorOnTertiaryContainer"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </GridLayout>
@@ -64,7 +64,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/expenses_by_category"
-            android:textColor="#1565C0"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"/>
@@ -135,7 +135,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/task_progress"
-            android:textColor="#1565C0"
+            android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp"/>

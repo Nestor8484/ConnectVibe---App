@@ -32,12 +32,16 @@ class CreateGroupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.btnBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         binding.btnCreateGroup.setOnClickListener {
             val name = binding.etGroupName.text.toString()
             if (name.isNotEmpty()) {
                 createGroup(name)
             } else {
-                Toast.makeText(requireContext(), "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                binding.tilGroupName.error = "El nombre no puede estar vacío"
             }
         }
     }

@@ -58,6 +58,7 @@
     <string name="add_member">Añadir Miembro</string>
     <string name="app_version_prefix">Versión</string>
     <string name="back_button">Atrás</string>
+    <string name="dark_mode">Modo Oscuro</string>
     <string name="event_participants_label">Participantes</string>
 
     <string name="category_food">Comida</string>
