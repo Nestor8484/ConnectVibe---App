@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +18,8 @@ import com.tuapp.eventos.di.SupabaseModule
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class EventInfoFragment : Fragment() {
 
@@ -69,9 +72,68 @@ class EventInfoFragment : Fragment() {
                     binding.tvDetailTitle.text = it.name
                     binding.tvDetailDescription.text = it.description ?: "Sin descripción"
                     
+                    // Mostrar fechas
+                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val startStr = it.startDate?.let { date -> dateFormat.format(date) }
+                    val endStr = it.endDate?.let { date -> dateFormat.format(date) }
+                    
+                    when {
+                        startStr != null && endStr != null -> {
+                            binding.tvDetailDate.text = "$startStr - $endStr"
+                            binding.llDateContainer.visibility = View.VISIBLE
+                        }
+                        startStr != null -> {
+                            binding.tvDetailDate.text = startStr
+                            binding.llDateContainer.visibility = View.VISIBLE
+                        }
+                        else -> {
+                            binding.llDateContainer.visibility = View.GONE
+                        }
+                    }
+
                     val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
                     val isAdmin = it.createdBy == userId
                     binding.btnEditEvent.visibility = if (isAdmin && it.status == "pending") View.VISIBLE else View.GONE
+
+                    // Aplicar colores dinámicos estilo "Roles"
+                    it.color?.let { colorStr ->
+                        try {
+                            val colorInt = colorStr.toColorInt()
+                            val alphaColor = (0.15 * 255).toInt() shl 24 or (colorInt and 0x00FFFFFF)
+                            val density = resources.displayMetrics.density
+
+                            // 1. Color del título y botón de editar
+                            binding.tvDetailTitle.setTextColor(colorInt)
+                            binding.btnEditEvent.iconTint = android.content.res.ColorStateList.valueOf(colorInt)
+
+                            // 2. Contenedor de fecha (fondo suave + borde)
+                            val dateBg = binding.llDateContainer.background.mutate() as? android.graphics.drawable.GradientDrawable
+                            dateBg?.let { dbg ->
+                                dbg.setColor(alphaColor)
+                                dbg.setStroke((2 * density).toInt(), colorInt)
+                            }
+                            binding.tvDetailDate.setTextColor(colorInt)
+                            binding.ivCalendarIcon.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+                            // 3. Card de participantes (fondo suave + borde)
+                            val card = binding.rvParticipants.parent as? com.google.android.material.card.MaterialCardView
+                            card?.let { c ->
+                                c.setCardBackgroundColor(alphaColor)
+                                c.strokeColor = colorInt
+                                c.strokeWidth = (2 * density).toInt()
+                                c.cardElevation = 0f
+                            }
+
+                            // 4. Botón Añadir Participante
+                            binding.btnAddParticipant.apply {
+                                backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                                setTextColor(android.graphics.Color.WHITE)
+                                iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+                            }
+                        } catch (e: Exception) {
+                            // Color inválido, ignorar
+                        }
+                    }
                 }
             }
         }

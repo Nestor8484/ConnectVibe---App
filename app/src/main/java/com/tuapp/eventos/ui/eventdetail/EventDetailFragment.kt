@@ -340,22 +340,43 @@ class EventDetailFragment : Fragment() {
                         try {
                             val colorInt = colorStr.toColorInt()
                             
-                            // 1. Cabecera: El contenedor del título toma el color del evento
-                            binding.tvEventTitleContainer.background.setTint(colorInt)
-                            binding.tvEventTitleContainer.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_theme_onPrimary))
+                            // Calcular colores derivados (estilo roles: fondo suave + borde fuerte)
+                            // Aumentamos ligeramente la opacidad del fondo (15%) para que se vea más
+                            val alphaColor = (0.15 * 255).toInt() shl 24 or (colorInt and 0x00FFFFFF)
+                            val density = resources.displayMetrics.density
+
+                            // 1. Cabecera: El contenedor del título con fondo suave y borde más grueso
+                            val titleBg = binding.tvEventTitleContainer.background.mutate() as? android.graphics.drawable.GradientDrawable
+                            titleBg?.let {
+                                it.setColor(alphaColor)
+                                it.setStroke((3 * density).toInt(), colorInt) // Aumentado a 3dp
+                            }
+                            binding.tvEventTitleContainer.setTextColor(colorInt)
                             
                             // 2. Elementos de interacción superior
                             binding.cbParticipateDetail.buttonTintList = android.content.res.ColorStateList.valueOf(colorInt)
                             binding.cbParticipateDetail.setTextColor(colorInt)
                             
                             binding.tvParticipantCount.setTextColor(colorInt)
-                            // El icono de grupos junto al contador
                             val participantContainer = binding.tvParticipantCount.parent as? ViewGroup
-                            participantContainer?.background?.setTint(colorInt)
+                            val partBg = participantContainer?.background?.mutate() as? android.graphics.drawable.GradientDrawable
+                            partBg?.let {
+                                it.setColor(alphaColor)
+                                it.setStroke((2 * density).toInt(), colorInt) // Aumentado a 2dp
+                            }
                             val groupIcon = participantContainer?.getChildAt(0) as? ImageView
                             groupIcon?.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
 
-                            // 3. Pestañas (Tabs) - Solo afectan a este TabLayout
+                            // 3. Ajuste al contenedor principal de contenido
+                            val contentBox = binding.tabLayout.parent as? ViewGroup
+                            val contentBg = contentBox?.background?.mutate() as? android.graphics.drawable.GradientDrawable
+                            contentBg?.let {
+                                val borderAlphaColor = (0.3 * 255).toInt() shl 24 or (colorInt and 0x00FFFFFF)
+                                it.setColor(android.graphics.Color.TRANSPARENT)
+                                it.setStroke((2 * density).toInt(), borderAlphaColor) // Borde de la caja más visible
+                            }
+
+                            // 4. Pestañas (Tabs)
                             binding.tabLayout.setSelectedTabIndicatorColor(colorInt)
                             binding.tabLayout.setTabTextColors(
                                 ContextCompat.getColor(requireContext(), R.color.md_theme_onSurfaceVariant),
@@ -431,7 +452,6 @@ class EventDetailFragment : Fragment() {
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_expenses)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_dashboard)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Info"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Tareas"))
 
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -452,8 +472,6 @@ class EventDetailFragment : Fragment() {
         binding.rvExpenses.visibility = if (position == 1) View.VISIBLE else View.GONE
         binding.layoutDashboard.visibility = if (position == 2) View.VISIBLE else View.GONE
         binding.layoutInfo.visibility = if (position == 3) View.VISIBLE else View.GONE
-        // position 4 (Tareas) visibility handled by fragment if using ViewPager, 
-        // but here we are using manual visibility.
     }
 
     private fun toggleChart() {

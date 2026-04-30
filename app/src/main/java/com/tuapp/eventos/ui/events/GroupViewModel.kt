@@ -16,6 +16,9 @@ class GroupViewModel : ViewModel() {
     private val _groupsState = MutableStateFlow<GroupsState>(GroupsState.Loading)
     val groupsState: StateFlow<GroupsState> = _groupsState.asStateFlow()
 
+    private val _currentGroup = MutableStateFlow<Group?>(null)
+    val currentGroup: StateFlow<Group?> = _currentGroup.asStateFlow()
+
     fun loadGroups(userId: String) {
         viewModelScope.launch {
             _groupsState.value = GroupsState.Loading
@@ -26,6 +29,32 @@ class GroupViewModel : ViewModel() {
                 _groupsState.value = GroupsState.Error(result.exceptionOrNull()?.message ?: "Error desconocido")
             }
         }
+    }
+
+    fun loadGroup(groupId: String) {
+        viewModelScope.launch {
+            val result = repository.getGroupById(groupId)
+            if (result.isSuccess) {
+                _currentGroup.value = result.getOrNull()
+            }
+        }
+    }
+
+    private val _updateState = MutableStateFlow<Result<Unit>?>(null)
+    val updateState: StateFlow<Result<Unit>?> = _updateState.asStateFlow()
+
+    fun updateGroup(groupId: String, name: String, description: String?, icon: String, color: String) {
+        viewModelScope.launch {
+            val result = repository.updateGroup(groupId, name, description, icon, color)
+            _updateState.value = result
+            if (result.isSuccess) {
+                loadGroup(groupId) // Recargar datos locales
+            }
+        }
+    }
+
+    fun resetUpdateState() {
+        _updateState.value = null
     }
 
     sealed class GroupsState {

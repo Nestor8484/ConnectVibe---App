@@ -28,6 +28,7 @@ class GroupDetailFragment : Fragment() {
 
     private val eventViewModel: EventViewModel by viewModels()
     private val memberViewModel: MemberViewModel by viewModels()
+    private val groupViewModel: GroupViewModel by viewModels()
     private val groupRepository = GroupRepository()
 
     private val eventAdapter = EventAdapter(
@@ -92,6 +93,13 @@ class GroupDetailFragment : Fragment() {
             }
             findNavController().navigate(R.id.addMemberFragment, bundle)
         }
+
+        binding.includeInfo.btnEditGroup.setOnClickListener {
+            val bundle = Bundle().apply {
+                putString("groupId", groupId)
+            }
+            findNavController().navigate(R.id.action_groupDetailFragment_to_editGroupFragment, bundle)
+        }
     }
 
     private fun setupDashboardToggle() {
@@ -128,6 +136,7 @@ class GroupDetailFragment : Fragment() {
                     0 -> showEvents()
                     1 -> showDashboard()
                     2 -> showMembers()
+                    3 -> showInfo()
                 }
             }
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
@@ -139,6 +148,7 @@ class GroupDetailFragment : Fragment() {
         binding.rvGroupEvents.visibility = View.VISIBLE
         binding.includeDashboard.root.visibility = View.GONE
         binding.includeMembers.root.visibility = View.GONE
+        binding.includeInfo.root.visibility = View.GONE
         binding.fabAddGroupEvent.visibility = View.VISIBLE
     }
 
@@ -146,6 +156,7 @@ class GroupDetailFragment : Fragment() {
         binding.rvGroupEvents.visibility = View.GONE
         binding.includeDashboard.root.visibility = View.VISIBLE
         binding.includeMembers.root.visibility = View.GONE
+        binding.includeInfo.root.visibility = View.GONE
         binding.fabAddGroupEvent.visibility = View.GONE
     }
 
@@ -153,7 +164,37 @@ class GroupDetailFragment : Fragment() {
         binding.rvGroupEvents.visibility = View.GONE
         binding.includeDashboard.root.visibility = View.GONE
         binding.includeMembers.root.visibility = View.VISIBLE
+        binding.includeInfo.root.visibility = View.GONE
         binding.fabAddGroupEvent.visibility = View.GONE
+    }
+
+    private fun showInfo() {
+        binding.rvGroupEvents.visibility = View.GONE
+        binding.includeDashboard.root.visibility = View.GONE
+        binding.includeMembers.root.visibility = View.GONE
+        binding.includeInfo.root.visibility = View.VISIBLE
+        binding.fabAddGroupEvent.visibility = View.GONE
+        
+        // Cargar datos en la vista de info
+        groupViewModel.currentGroup.value?.let { group ->
+            binding.includeInfo.tvGroupDescription.text = group.description ?: "Sin descripción"
+            binding.includeInfo.tvGroupIconName.text = group.icon ?: "Grupo de Amigos"
+            
+            val iconRes = when (group.icon) {
+                "Grupo de Amigos" -> R.drawable.ic_groups
+                else -> android.R.drawable.ic_menu_myplaces
+            }
+            binding.includeInfo.ivGroupInfoIcon.setImageResource(iconRes)
+            
+            group.color?.let { colorStr ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(colorStr)
+                    binding.includeInfo.vGroupColorPreview.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                    binding.includeInfo.tvInfoTitle.setTextColor(colorInt)
+                    binding.includeInfo.ivGroupInfoIcon.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                } catch (e: Exception) {}
+            }
+        }
     }
 
     private fun observeViewModel() {
@@ -185,9 +226,57 @@ class GroupDetailFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            groupViewModel.currentGroup.collectLatest { group ->
+                group?.let {
+                    binding.tvGroupName.text = it.name
+                    it.color?.let { color -> applyGroupStyle(color) }
+                }
+            }
+        }
+    }
+
+    private fun applyGroupStyle(colorStr: String) {
+        try {
+            val colorInt = android.graphics.Color.parseColor(colorStr)
+            val alphaColor = (0.15 * 255).toInt() shl 24 or (colorInt and 0x00FFFFFF)
+            val density = resources.displayMetrics.density
+
+            // 1. Título (Fondo suave + borde intenso)
+            val titleBg = binding.tvGroupName.background?.mutate() as? android.graphics.drawable.GradientDrawable
+            titleBg?.let {
+                it.setColor(alphaColor)
+                it.setStroke((3 * density).toInt(), colorInt)
+            }
+            binding.tvGroupName.setTextColor(colorInt)
+
+            // 2. Tabs
+            binding.groupTabLayout.setSelectedTabIndicatorColor(colorInt)
+            binding.groupTabLayout.setTabTextColors(
+                androidx.core.content.ContextCompat.getColor(requireContext(), R.color.md_theme_onSurfaceVariant),
+                colorInt
+            )
+
+            // 3. FAB
+            binding.fabAddGroupEvent.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+            
+            // 4. Back button y Profile icon
+            binding.btnBack.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+            binding.ivUserProfile.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+            // 5. Aplicar a la pestaña de info
+            binding.includeInfo.tvInfoTitle.setTextColor(colorInt)
+            binding.includeInfo.vGroupColorPreview.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+            binding.includeInfo.ivGroupInfoIcon.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+        } catch (e: Exception) {
+            android.util.Log.e("GroupDetail", "Error applying color: ${e.message}")
+        }
     }
 
     private fun loadGroupData(groupId: String) {
+        groupViewModel.loadGroup(groupId)
         eventViewModel.loadEventsByGroup(groupId)
         memberViewModel.loadMembers(groupId)
     }
@@ -198,8 +287,10 @@ class GroupDetailFragment : Fragment() {
             val isAdmin = groupRepository.isUserAdmin(groupId, userId)
             if (isAdmin) {
                 binding.fabAddGroupEvent.visibility = View.VISIBLE
+                binding.includeInfo.btnEditGroup.visibility = View.VISIBLE
             } else {
                 binding.fabAddGroupEvent.visibility = View.GONE
+                binding.includeInfo.btnEditGroup.visibility = View.GONE
             }
         }
     }

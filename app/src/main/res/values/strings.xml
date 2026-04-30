@@ -69,7 +69,7 @@
     <!-- Auth Strings -->
     <string name="welcome_back">Welcome Back</string>
     <string name="login_to_continue">Login to continue</string>
-    <string name="email_hint">Email Address</string>
+    <string name="email_hint">Username or Email</string>
     <string name="password_hint">Password</string>
     <string name="login_button">Login</string>
     <string name="dont_have_account">Don\'t have an account? Register</string>

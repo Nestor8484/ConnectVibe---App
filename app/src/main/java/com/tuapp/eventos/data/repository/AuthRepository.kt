@@ -34,7 +34,8 @@ class AuthRepository {
                     val profile = Profile(
                         id = userId,
                         username = username,
-                        full_name = fullName
+                        full_name = fullName,
+                        email = email
                     )
                     Log.d("AuthRepository", "Insertando perfil en DB: $profile")
                     client.from("profiles").insert(profile)
@@ -51,9 +52,37 @@ class AuthRepository {
         }
     }
 
-    suspend fun signIn(email: String, pass: String): Result<Unit> {
+    suspend fun signIn(identifier: String, pass: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
+                // Determinar si el identificador es un email o un username
+                val email = if (android.util.Patterns.EMAIL_ADDRESS.matcher(identifier).matches()) {
+                    identifier
+                } else {
+                    // Si no es email, buscamos el email asociado al username en la tabla profiles
+                    Log.d("AuthRepository", "Buscando email para el username: $identifier")
+                    
+                    // Intentamos buscar el perfil. 
+                    // IMPORTANTE: La tabla 'profiles' debe permitir lectura pública para que esto funcione antes del login.
+                    val profile = try {
+                        client.from("profiles")
+                            .select {
+                                filter {
+                                    eq("username", identifier)
+                                }
+                            }
+                            .decodeSingleOrNull<Profile>()
+                    } catch (e: Exception) {
+                        Log.e("AuthRepository", "Error consultando tabla profiles: ${e.message}")
+                        null
+                    }
+                    
+                    if (profile?.email == null) {
+                        throw Exception("No se encontró el usuario '$identifier' o no tiene un correo asociado.")
+                    }
+                    profile.email
+                }
+
                 Log.d("AuthRepository", "Intentando login para: $email")
                 client.auth.signInWith(Email) {
                     this.email = email

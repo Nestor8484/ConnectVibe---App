@@ -11,39 +11,48 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.tuapp.eventos.R
-import com.tuapp.eventos.databinding.FragmentCreateGroupBinding
-import com.tuapp.eventos.di.SupabaseModule
-import io.github.jan.supabase.auth.auth
+import com.tuapp.eventos.databinding.FragmentEditGroupBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class CreateGroupFragment : Fragment() {
+class EditGroupFragment : Fragment() {
 
-    private var _binding: FragmentCreateGroupBinding? = null
+    private var _binding: FragmentEditGroupBinding? = null
     private val binding get() = _binding!!
 
     private val viewModel: GroupViewModel by viewModels()
     private var selectedGroupColor: String = "#1565C0"
+    private var groupId: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentCreateGroupBinding.inflate(inflater, container, false)
+        _binding = FragmentEditGroupBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        groupId = arguments?.getString("groupId") ?: ""
+        if (groupId.isEmpty()) {
+            findNavController().popBackStack()
+            return
+        }
+
         setupIconDropdown()
         setupColorSelection()
+        observeViewModel()
+        
+        viewModel.loadGroup(groupId)
 
         binding.btnBack.setOnClickListener {
             findNavController().popBackStack()
         }
 
-        binding.btnCreateGroup.setOnClickListener {
-            createGroup()
+        binding.btnUpdateGroup.setOnClickListener {
+            updateGroup()
         }
     }
 
@@ -51,7 +60,6 @@ class CreateGroupFragment : Fragment() {
         val icons = arrayOf("Grupo de Amigos", "Familia", "Trabajo", "Deportes", "Estudios", "Viajes", "Hobby")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, icons)
         binding.acGroupIcon.setAdapter(adapter)
-        binding.acGroupIcon.setText("Grupo de Amigos", false)
     }
 
     private fun setupColorSelection() {
@@ -72,7 +80,6 @@ class CreateGroupFragment : Fragment() {
             }
             binding.llGroupColorContainer.addView(colorView)
         }
-        updateColorSelectionUI()
     }
 
     private fun updateColorSelectionUI() {
@@ -94,38 +101,60 @@ class CreateGroupFragment : Fragment() {
             view.scaleX = if (isSelected) 1.15f else 1.0f
             view.scaleY = if (isSelected) 1.15f else 1.0f
         }
+        
+        // Actualizar UI general con el color seleccionado
+        try {
+            val colorInt = android.graphics.Color.parseColor(selectedGroupColor)
+            binding.btnUpdateGroup.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+            binding.btnBack.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+        } catch (e: Exception) {}
     }
 
-    private fun createGroup() {
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.currentGroup.collectLatest { group ->
+                group?.let {
+                    binding.etGroupName.setText(it.name)
+                    binding.etGroupDescription.setText(it.description)
+                    binding.acGroupIcon.setText(it.icon, false)
+                    selectedGroupColor = it.color ?: "#1565C0"
+                    updateColorSelectionUI()
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.updateState.collectLatest { result ->
+                result?.let {
+                    binding.progressBar.visibility = View.GONE
+                    binding.btnUpdateGroup.isEnabled = true
+                    
+                    if (it.isSuccess) {
+                        Toast.makeText(requireContext(), "Grupo actualizado", Toast.LENGTH_SHORT).show()
+                        viewModel.resetUpdateState()
+                        findNavController().popBackStack()
+                    } else {
+                        Toast.makeText(requireContext(), "Error: ${it.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                        viewModel.resetUpdateState()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateGroup() {
         val name = binding.etGroupName.text.toString().trim()
         val description = binding.etGroupDescription.text.toString().trim()
         val icon = binding.acGroupIcon.text.toString()
-        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
 
         if (name.isEmpty()) {
             binding.etGroupName.error = "El nombre es obligatorio"
             return
         }
 
-        if (userId == null) return
-
-        binding.btnCreateGroup.isEnabled = false
+        binding.btnUpdateGroup.isEnabled = false
         binding.progressBar.visibility = View.VISIBLE
-
-        lifecycleScope.launch {
-            val repository = com.tuapp.eventos.data.repository.GroupRepository()
-            val result = repository.createGroup(name, description, icon, selectedGroupColor, userId)
-            
-            binding.btnCreateGroup.isEnabled = true
-            binding.progressBar.visibility = View.GONE
-
-            if (result.isSuccess) {
-                Toast.makeText(requireContext(), "Grupo creado con éxito", Toast.LENGTH_SHORT).show()
-                findNavController().popBackStack()
-            } else {
-                Toast.makeText(requireContext(), "Error: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
+        viewModel.updateGroup(groupId, name, description, icon, selectedGroupColor)
     }
 
     override fun onDestroyView() {

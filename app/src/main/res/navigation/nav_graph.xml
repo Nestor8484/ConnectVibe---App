@@ -67,6 +67,19 @@
         <argument
             android:name="groupName"
             app:argType="string" />
+        <action
+            android:id="@+id/action_groupDetailFragment_to_editGroupFragment"
+            app:destination="@id/editGroupFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editGroupFragment"
+        android:name="com.tuapp.eventos.ui.events.EditGroupFragment"
+        android:label="Edit Group"
+        tools:layout="@layout/fragment_edit_group">
+        <argument
+            android:name="groupId"
+            app:argType="string" />
     </fragment>
 
     <fragment

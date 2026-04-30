@@ -16,12 +16,15 @@ import kotlinx.serialization.json.jsonObject
 class GroupRepository {
     private val client = SupabaseModule.client
 
-    suspend fun createGroup(name: String, userId: String): Result<String> {
+    suspend fun createGroup(name: String, description: String?, icon: String, color: String, userId: String): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
                 // 1. Insert group
                 val group = Group(
                     name = name,
+                    description = description,
+                    icon = icon,
+                    color = color,
                     created_by = userId
                 )
                 val insertedGroup = client.from("groups").insert(group) {
@@ -40,6 +43,28 @@ class GroupRepository {
                 client.from("group_members").insert(member)
 
                 Result.success(groupId)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun updateGroup(groupId: String, name: String, description: String?, icon: String, color: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                client.from("groups").update(
+                    {
+                        set("name", name)
+                        set("description", description)
+                        set("icon", icon)
+                        set("color", color)
+                    }
+                ) {
+                    filter {
+                        eq("id", groupId)
+                    }
+                }
+                Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -74,6 +99,22 @@ class GroupRepository {
                         }
                     }.decodeList<Group>()
                 Result.success(groups)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getGroupById(groupId: String): Result<Group> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val group = client.from("groups")
+                    .select {
+                        filter {
+                            eq("id", groupId)
+                        }
+                    }.decodeSingle<Group>()
+                Result.success(group)
             } catch (e: Exception) {
                 Result.failure(e)
             }

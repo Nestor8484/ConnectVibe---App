@@ -234,8 +234,8 @@ class EditEventDialogFragment : DialogFragment() {
                         binding.btnSave.isEnabled = false
                     }
                     is EventViewModel.CreateEventState.Success -> {
-                        dismiss()
                         viewModel.resetCreateState()
+                        dismiss()
                     }
                     is EventViewModel.CreateEventState.Error -> {
                         binding.btnSave.isEnabled = true

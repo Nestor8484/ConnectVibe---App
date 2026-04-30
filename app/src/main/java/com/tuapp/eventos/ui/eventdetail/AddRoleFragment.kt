@@ -192,8 +192,7 @@ class AddRoleFragment : DialogFragment() {
                         binding.btnConfirm.isEnabled = false
                     }
                     is EventViewModel.RoleOpState.Success -> {
-                        // Importante: No resetear el estado aquí si otros observadores lo necesitan
-                        // O hacerlo después de cerrar
+                        viewModel.resetRoleOpState()
                         dismiss()
                     }
                     is EventViewModel.RoleOpState.Error -> {

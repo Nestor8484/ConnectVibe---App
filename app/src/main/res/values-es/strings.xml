@@ -70,7 +70,7 @@
     <!-- Auth Strings -->
     <string name="welcome_back">Bienvenido de nuevo</string>
     <string name="login_to_continue">Inicia sesión para continuar</string>
-    <string name="email_hint">Correo Electrónico</string>
+    <string name="email_hint">Usuario o Correo Electrónico</string>
     <string name="password_hint">Contraseña</string>
     <string name="login_button">Entrar</string>
     <string name="dont_have_account">¿No tienes cuenta? Regístrate</string>
