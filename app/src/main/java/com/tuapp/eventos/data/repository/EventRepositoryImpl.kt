@@ -81,6 +81,20 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
+    override suspend fun updateEvent(event: Event): Result<Unit> {
+        return try {
+            client.from("events").update(event) {
+                filter {
+                    eq("id", event.id ?: "")
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error updating event: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
     override suspend fun joinEvent(eventId: String, userId: String): Result<Unit> {
         return try {
             // First check if already member to avoid duplicate key error
@@ -305,25 +319,41 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
-    override suspend fun deleteEvent(event: Event) {
-        try {
-            event.id?.let { id ->
-                client.from("events").delete {
-                    filter {
-                        eq("id", id)
-                    }
+    override suspend fun deleteEvent(eventId: String): Result<Unit> {
+        return try {
+            client.from("events").delete {
+                filter {
+                    eq("id", eventId)
                 }
             }
+            Result.success(Unit)
         } catch (e: Exception) {
-            throw e
+            android.util.Log.e("EventRepository", "Error deleting event: ${e.message}")
+            Result.failure(e)
         }
     }
 
     override suspend fun addExpense(eventId: String, expense: Expense) {
+        try {
+            client.from("expenses").insert(expense.copy(eventId = eventId))
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error adding expense: ${e.message}")
+        }
     }
 
     override suspend fun getExpenses(eventId: String): List<Expense> {
-        return emptyList()
+        return try {
+            client.from("expenses")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                    }
+                }
+                .decodeList<Expense>()
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error fetching expenses: ${e.message}")
+            emptyList()
+        }
     }
 
     override fun getEventsByGroup(groupId: String): Flow<List<Event>> = flow {

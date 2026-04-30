@@ -26,16 +26,24 @@ class AddExpenseFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val eventId = arguments?.getString("eventId") ?: ""
+
         setupToolbar()
         setupPayerDropdown()
 
         binding.btnAddExpense.setOnClickListener {
-            val amount = binding.etAmount.text.toString()
-            if (amount.isNotBlank()) {
+            val amountStr = binding.etAmount.text.toString()
+            val description = binding.etExpenseDescription.text.toString()
+            
+            if (amountStr.isNotBlank() && description.isNotBlank()) {
+                val amount = amountStr.toDoubleOrNull() ?: 0.0
+                // In a real flow, we'd get the actual payer ID from the dropdown selection
+                // and use a ViewModel to save it to Supabase.
                 Toast.makeText(context, "Expense of €$amount saved", Toast.LENGTH_SHORT).show()
                 findNavController().popBackStack()
             } else {
-                binding.etAmount.error = "Amount required"
+                if (amountStr.isBlank()) binding.etAmount.error = "Amount required"
+                if (description.isBlank()) binding.etExpenseDescription.error = "Description required"
             }
         }
     }

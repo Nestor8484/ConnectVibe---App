@@ -7,13 +7,21 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.tuapp.eventos.databinding.FragmentAddParticipantBinding
+import com.tuapp.eventos.ui.events.EventViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class AddParticipantFragment : Fragment() {
 
     private var _binding: FragmentAddParticipantBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: EventViewModel by activityViewModels()
+    private var eventId: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -26,17 +34,38 @@ class AddParticipantFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        eventId = arguments?.getString("eventId") ?: ""
+
         setupToolbar()
-        setupRoleDropdown()
+        observeViewModel()
 
         binding.btnAdd.setOnClickListener {
             val name = binding.etParticipantName.text.toString()
             if (name.isNotBlank()) {
-                Toast.makeText(context, "Participant $name added", Toast.LENGTH_SHORT).show()
-                findNavController().popBackStack()
+                // In a real app, we would search for a user first.
+                // For now, we'll use a placeholder logic or rely on participation toggle.
+                Toast.makeText(context, "Search for user logic pending. For now, join/leave is used in the UI.", Toast.LENGTH_SHORT).show()
+                // findNavController().popBackStack()
             } else {
                 binding.etParticipantName.error = "Name required"
             }
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.roles.collectLatest { roles ->
+                val roleNames = roles.map { it.name }.toMutableList()
+                if (roleNames.isEmpty()) {
+                    roleNames.addAll(listOf("Organizer", "Guest"))
+                }
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, roleNames)
+                binding.atvRole.setAdapter(adapter)
+            }
+        }
+        
+        if (eventId.isNotEmpty()) {
+            viewModel.loadRoles(eventId)
         }
     }
 
@@ -46,11 +75,6 @@ class AddParticipantFragment : Fragment() {
         }
     }
 
-    private fun setupRoleDropdown() {
-        val roles = listOf("Organizer", "Cook", "Driver", "Guest", "Custom Role...")
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, roles)
-        binding.atvRole.setAdapter(adapter)
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

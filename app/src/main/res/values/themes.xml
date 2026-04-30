@@ -51,6 +51,19 @@
 
     <style name="Theme.ConnectVibe.Dialog" parent="Theme.Material3.Light.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowIsFloating">true</item>
+        <item name="materialAlertDialogTheme">@style/Theme.ConnectVibe.MaterialAlertDialog</item>
+    </style>
+
+    <style name="Theme.ConnectVibe.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">?attr/colorSurfaceContainer</item>
+        <item name="alertDialogStyle">@style/Theme.ConnectVibe.AlertDialogStyle</item>
+    </style>
+
+    <style name="Theme.ConnectVibe.AlertDialogStyle" parent="MaterialAlertDialog.Material3">
+        <item name="background">?attr/colorSurfaceContainer</item>
+        <item name="backgroundTint">?attr/colorSurfaceContainer</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Large</item>
     </style>
 </resources>

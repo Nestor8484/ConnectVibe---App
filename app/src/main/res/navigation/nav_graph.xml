@@ -137,7 +137,11 @@
         android:id="@+id/addParticipantFragment"
         android:name="com.tuapp.eventos.ui.eventdetail.AddParticipantFragment"
         android:label="Add Participant"
-        tools:layout="@layout/fragment_add_participant" />
+        tools:layout="@layout/fragment_add_participant">
+        <argument
+            android:name="eventId"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/addExpenseFragment"

@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tuapp.eventos.data.repository.EventRepository
 import com.tuapp.eventos.data.repository.EventRepositoryImpl
-import com.tuapp.eventos.domain.model.Event
-import com.tuapp.eventos.domain.model.Role
-import com.tuapp.eventos.domain.model.GroupMember
+import com.tuapp.eventos.domain.model.*
 import com.tuapp.eventos.domain.model.EventRoleMember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +41,9 @@ class EventViewModel : ViewModel() {
 
     private val _roleMembers = MutableStateFlow<List<EventRoleMember>>(emptyList())
     val roleMembers: StateFlow<List<EventRoleMember>> = _roleMembers.asStateFlow()
+
+    private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
+    val expenses: StateFlow<List<Expense>> = _expenses.asStateFlow()
 
     fun loadPublicEvents(currentUserId: String?) {
         viewModelScope.launch {
@@ -116,6 +117,20 @@ class EventViewModel : ViewModel() {
             if (result.isSuccess) {
                 _roleMembers.value = result.getOrThrow()
             }
+        }
+    }
+
+    fun loadExpenses(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.getExpenses(eventId)
+            _expenses.value = result
+        }
+    }
+
+    fun addExpense(eventId: String, expense: Expense) {
+        viewModelScope.launch {
+            repository.addExpense(eventId, expense)
+            loadExpenses(eventId)
         }
     }
 
@@ -267,6 +282,34 @@ class EventViewModel : ViewModel() {
                 _createEventState.value = CreateEventState.Success
             } else {
                 _createEventState.value = CreateEventState.Error(result.exceptionOrNull()?.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun updateEvent(event: Event) {
+        viewModelScope.launch {
+            _createEventState.value = CreateEventState.Loading
+            val result = repository.updateEvent(event)
+            if (result.isSuccess) {
+                _createEventState.value = CreateEventState.Success
+                // Actualizar el evento actual si es el mismo que tenemos cargado
+                if (_event.value?.id == event.id) {
+                    _event.value = event
+                }
+            } else {
+                _createEventState.value = CreateEventState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar")
+            }
+        }
+    }
+
+    fun deleteEvent(eventId: String) {
+        viewModelScope.launch {
+            _createEventState.value = CreateEventState.Loading
+            val result = repository.deleteEvent(eventId)
+            if (result.isSuccess) {
+                _createEventState.value = CreateEventState.Success
+            } else {
+                _createEventState.value = CreateEventState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar")
             }
         }
     }

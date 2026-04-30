@@ -55,6 +55,7 @@
     <string name="task_progress">Task Progress</string>
     <string name="tasks_completed_suffix">of tasks completed</string>
     <string name="add_member">Add Member</string>
+    <string name="add_role">Add Role</string>
     <string name="app_version_prefix">Version</string>
     <string name="back_button">Back</string>
     <string name="dark_mode">Dark Mode</string>

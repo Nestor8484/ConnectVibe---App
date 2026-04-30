@@ -53,16 +53,37 @@
             app:layout_constraintTop_toBottomOf="@id/tvEventTitle"
             tools:text="Descripción detallada del evento o grupo" />
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvEventDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/bg_dot_outline"
+            android:drawableStart="@android:drawable/ic_menu_myplaces"
+            android:drawablePadding="8dp"
+            android:drawableTint="?attr/colorPrimary"
             android:gravity="center_vertical"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/tvEventLocation"
-            app:layout_constraintTop_toBottomOf="@id/tvEventLocation">
+            app:layout_constraintTop_toBottomOf="@id/tvEventLocation"
+            tools:text="15/10/2023 20:00" />
+
+        <LinearLayout
+            android:id="@+id/llParticipantSummary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_dot_outline"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            app:layout_constraintBottom_toBottomOf="@id/tvEventDate"
+            app:layout_constraintStart_toEndOf="@id/tvEventDate"
+            app:layout_constraintTop_toTopOf="@id/tvEventDate">
 
             <ImageView
                 android:layout_width="16dp"
@@ -80,12 +101,6 @@
                 android:textSize="13sp"
                 android:textStyle="bold" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvEventDate"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
 
         <TextView
             android:id="@+id/tvEventBadge"

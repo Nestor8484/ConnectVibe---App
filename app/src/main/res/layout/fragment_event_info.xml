@@ -11,14 +11,33 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvDetailTitle"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="#212121"
-            tools:text="Event Title" />
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tvDetailTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/btnEditEvent"
+                android:layout_marginEnd="8dp"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#212121"
+                tools:text="Event Title" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditEvent"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:visibility="gone"
+                app:icon="@android:drawable/ic_menu_edit"
+                app:iconTint="#1565C0"
+                tools:visibility="visible" />
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/tvDetailDescription"

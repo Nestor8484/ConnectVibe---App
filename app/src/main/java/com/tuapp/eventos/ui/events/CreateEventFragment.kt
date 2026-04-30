@@ -1,5 +1,7 @@
 package com.tuapp.eventos.ui.events
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,7 +23,10 @@ import com.tuapp.eventos.ui.eventdetail.RoleAdapter
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 class CreateEventFragment : Fragment() {
 
@@ -40,6 +45,11 @@ class CreateEventFragment : Fragment() {
         )
     }
     private val createdRoles = mutableListOf<Role>()
+    private var selectedEventColor: String = "#1565C0"
+    private var editingEventId: String? = null
+    private var startDateTime: Calendar = Calendar.getInstance()
+    private var endDateTime: Calendar = Calendar.getInstance().apply { add(Calendar.HOUR_OF_DAY, 1) }
+    private val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,6 +71,14 @@ class CreateEventFragment : Fragment() {
         }
 
         setupRecyclerView()
+        setupEventIconDropdown()
+        setupEventColorSelection()
+        setupDateTimePicker()
+
+        editingEventId = arguments?.getString("eventId")
+        if (editingEventId != null) {
+            setupEditMode()
+        }
 
         binding.btnBack.setOnClickListener {
             findNavController().popBackStack()
@@ -95,14 +113,160 @@ class CreateEventFragment : Fragment() {
         }
     }
 
+    private fun setupDateTimePicker() {
+        binding.etStartDateTime.setText(dateTimeFormatter.format(startDateTime.time))
+        binding.etEndDateTime.setText(dateTimeFormatter.format(endDateTime.time))
+
+        binding.etStartDateTime.setOnClickListener {
+            showDatePicker(isStartDate = true)
+        }
+        binding.etEndDateTime.setOnClickListener {
+            showDatePicker(isStartDate = false)
+        }
+    }
+
+    private fun showDatePicker(isStartDate: Boolean) {
+        val calendar = if (isStartDate) startDateTime else endDateTime
+        val datePicker = DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                calendar.set(Calendar.YEAR, year)
+                calendar.set(Calendar.MONTH, month)
+                calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                showTimePicker(isStartDate)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        datePicker.show()
+    }
+
+    private fun showTimePicker(isStartDate: Boolean) {
+        val calendar = if (isStartDate) startDateTime else endDateTime
+        val timePicker = TimePickerDialog(
+            requireContext(),
+            { _, hourOfDay, minute ->
+                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                calendar.set(Calendar.MINUTE, minute)
+                val formatted = dateTimeFormatter.format(calendar.time)
+                if (isStartDate) {
+                    binding.etStartDateTime.setText(formatted)
+                    // Auto-adjust end date if it's before start date
+                    if (endDateTime.before(startDateTime)) {
+                        endDateTime.time = startDateTime.time
+                        endDateTime.add(Calendar.HOUR_OF_DAY, 1)
+                        binding.etEndDateTime.setText(dateTimeFormatter.format(endDateTime.time))
+                    }
+                } else {
+                    binding.etEndDateTime.setText(formatted)
+                }
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
+        )
+        timePicker.show()
+    }
+
+    private fun setupEventIconDropdown() {
+        val icons = arrayOf("Evento General", "Fiesta", "Boda", "Deportes", "Trabajo", "Educación", "Viaje", "Comida", "Salud")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, icons)
+        binding.acEventIcon.setAdapter(adapter)
+        binding.acEventIcon.setText("Evento General", false)
+    }
+
+    private fun setupEventColorSelection() {
+        val colors = listOf("#1565C0", "#2E7D32", "#C62828", "#F9A825", "#6A1B9A", "#EF6C00", "#00838F", "#37474F")
+        binding.llEventColorContainer.removeAllViews()
+        
+        colors.forEach { colorStr ->
+            val colorView = View(requireContext()).apply {
+                val size = (36 * resources.displayMetrics.density).toInt()
+                layoutParams = ViewGroup.MarginLayoutParams(size, size).apply {
+                    setMargins(8, 8, 8, 8)
+                }
+                tag = colorStr
+                setOnClickListener {
+                    selectedEventColor = colorStr
+                    updateEventColorSelectionUI()
+                }
+            }
+            binding.llEventColorContainer.addView(colorView)
+        }
+        updateEventColorSelectionUI()
+    }
+
+    private fun updateEventColorSelectionUI() {
+        for (i in 0 until binding.llEventColorContainer.childCount) {
+            val view = binding.llEventColorContainer.getChildAt(i)
+            val colorStr = view.tag as String
+            val isSelected = selectedEventColor == colorStr
+            
+            val drawable = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(android.graphics.Color.parseColor(colorStr))
+                if (isSelected) {
+                    setStroke((3 * resources.displayMetrics.density).toInt(), android.graphics.Color.DKGRAY)
+                } else {
+                    setStroke((1 * resources.displayMetrics.density).toInt(), android.graphics.Color.LTGRAY)
+                }
+            }
+            view.background = drawable
+            view.scaleX = if (isSelected) 1.15f else 1.0f
+            view.scaleY = if (isSelected) 1.15f else 1.0f
+        }
+    }
+
+    private fun setupEditMode() {
+        binding.tvTitleContainer.text = "Editar Evento"
+        binding.btnSaveEvent.text = "GUARDAR CAMBIOS"
+        
+        // Cargar datos del evento desde el ViewModel si es edición
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.loadEvent(editingEventId!!)
+            viewModel.event.collectLatest { event ->
+                event?.let {
+                    binding.etTitle.setText(it.name)
+                    binding.etDescription.setText(it.description)
+                    binding.switchPublic.isChecked = it.visibility == "public"
+                    binding.acEventIcon.setText(it.icon ?: "Evento General", false)
+                    selectedEventColor = it.color ?: "#1565C0"
+                    it.startDate?.let { date ->
+                        startDateTime.time = date
+                        binding.etStartDateTime.setText(dateTimeFormatter.format(date))
+                    }
+                    it.endDate?.let { date ->
+                        endDateTime.time = date
+                        binding.etEndDateTime.setText(dateTimeFormatter.format(date))
+                    }
+                    updateEventColorSelectionUI()
+                }
+            }
+        }
+        
+        // Ocultar sección de roles en edición (se gestionan desde el detalle)
+        binding.btnAddRole.visibility = View.GONE
+        binding.rvRolesToCreate.visibility = View.GONE
+        binding.tvEmptyRolesHint.visibility = View.GONE
+        // El separador anterior
+        binding.btnAddRole.parent.let { (it as? View)?.visibility = View.GONE }
+    }
+
     private fun saveEvent() {
         val name = binding.etTitle.text.toString().trim()
         val description = binding.etDescription.text.toString().trim()
         val isPublic = binding.switchPublic.isChecked
+        val icon = binding.acEventIcon.text.toString()
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
 
         if (name.isBlank()) {
             binding.etTitle.error = "Title required"
+            return
+        }
+
+        if (endDateTime.before(startDateTime)) {
+            Toast.makeText(context, "La fecha de finalización debe ser posterior a la de inicio", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -111,25 +275,41 @@ class CreateEventFragment : Fragment() {
             return
         }
 
-        // Generating a unique slug
-        val slug = name.lowercase().replace("[^a-z0-9]".toRegex(), "-").take(50) + "-" + System.currentTimeMillis()
-
-        // Using lowercase exactly as confirmed by the user
         val visibilityValue = if (isPublic) "public" else "private"
         val groupId = arguments?.getString("groupId")
 
-        val event = Event(
-            name = name,
-            description = if (description.isEmpty()) null else description,
-            visibility = visibilityValue,
-            createdBy = userId,
-            slug = slug,
-            startDate = Date(),
-            endDate = Date(),
-            groupId = groupId
-        )
-
-        viewModel.createEvent(event, createdRoles)
+        if (editingEventId != null) {
+            // Lógica de Actualización
+            val updatedEvent = Event(
+                id = editingEventId,
+                name = name,
+                description = if (description.isEmpty()) null else description,
+                visibility = visibilityValue,
+                createdBy = userId, 
+                startDate = startDateTime.time,
+                endDate = endDateTime.time,
+                groupId = groupId,
+                icon = icon,
+                color = selectedEventColor
+            )
+            viewModel.updateEvent(updatedEvent)
+        } else {
+            // Lógica de Creación original
+            val slug = name.lowercase().replace("[^a-z0-9]".toRegex(), "-").take(50) + "-" + System.currentTimeMillis()
+            val event = Event(
+                name = name,
+                description = if (description.isEmpty()) null else description,
+                visibility = visibilityValue,
+                createdBy = userId,
+                slug = slug,
+                startDate = startDateTime.time,
+                endDate = endDateTime.time,
+                groupId = groupId,
+                icon = icon,
+                color = selectedEventColor
+            )
+            viewModel.createEvent(event, createdRoles)
+        }
     }
 
     private fun observeViewModel() {
@@ -140,7 +320,8 @@ class CreateEventFragment : Fragment() {
                         binding.btnSaveEvent.isEnabled = false
                     }
                     is EventViewModel.CreateEventState.Success -> {
-                        Toast.makeText(context, "Evento creado correctamente", Toast.LENGTH_SHORT).show()
+                        val msg = if (editingEventId != null) "Evento actualizado" else "Evento creado correctamente"
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         viewModel.resetCreateState()
                         findNavController().popBackStack()
                     }

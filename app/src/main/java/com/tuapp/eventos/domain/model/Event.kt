@@ -87,6 +87,9 @@ data class Event(
     @SerialName("description")
     val description: String? = null,
     
+    @SerialName("location")
+    val location: String? = null,
+    
     @SerialName("slug")
     val slug: String? = null,
     
@@ -114,6 +117,12 @@ data class Event(
 
     @SerialName("status")
     val status: String = "pending", // "pending", "started", "finished"
+
+    @SerialName("icon")
+    val icon: String? = null,
+
+    @SerialName("color")
+    val color: String? = null,
     
     // UI temporary state (Transient - not sent to DB)
     @kotlinx.serialization.Transient

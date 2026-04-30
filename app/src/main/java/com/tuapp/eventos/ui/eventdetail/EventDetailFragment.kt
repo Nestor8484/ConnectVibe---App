@@ -6,8 +6,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +23,7 @@ import com.google.android.material.tabs.TabLayout
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventDetailBinding
 import com.tuapp.eventos.di.SupabaseModule
+import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
 import com.tuapp.eventos.domain.model.MemberRole
@@ -39,14 +44,11 @@ class EventDetailFragment : Fragment() {
     private var currentEventId: String? = null
     private var isUserAdmin = false
 
+    private val participantAdapter = ParticipantAdapter()
+
     private val roleAdapter = RoleAdapter(
         onRoleClick = { role -> 
-            if (isUserAdmin && viewModel.event.value?.status == "pending") {
-                val addRoleFragment = AddRoleFragment.newInstance(currentEventId ?: "", role)
-                addRoleFragment.show(childFragmentManager, "AddRoleFragment")
-            } else {
-                showRoleDetailDialog(role) 
-            }
+            showRoleDetailDialog(role)
         },
         onDeleteClick = { role -> showDeleteRoleDialog(role) }
     )
@@ -71,7 +73,7 @@ class EventDetailFragment : Fragment() {
         val eventDesc = arguments?.getString("eventDescription") ?: "Descripción del evento"
 
         binding.tvEventTitleContainer.text = eventTitle
-        binding.tvEventDescription.text = eventDesc
+        binding.tvInfoDescription.text = eventDesc
 
         setupRecyclerViews()
         setupTabs()
@@ -87,11 +89,7 @@ class EventDetailFragment : Fragment() {
         }
 
         binding.tvParticipantCount.setOnClickListener {
-            val bundle = Bundle().apply {
-                putString("eventId", currentEventId)
-                putString("eventTitle", eventTitle)
-            }
-            findNavController().navigate(R.id.eventParticipantsFragment, bundle)
+            binding.tabLayout.getTabAt(3)?.select()
         }
 
         binding.fabAddExpense.setOnClickListener {
@@ -108,7 +106,7 @@ class EventDetailFragment : Fragment() {
             toggleChart()
         }
 
-        binding.fabEventAction.setOnClickListener {
+        binding.btnStatusAction.setOnClickListener {
             handleStatusAction()
         }
 
@@ -151,28 +149,42 @@ class EventDetailFragment : Fragment() {
     private fun updateAdminUi() {
         val currentEvent = viewModel.event.value
         val status = currentEvent?.status ?: "pending"
+        val selectedTab = binding.tabLayout.selectedTabPosition
         
-        if (binding.tabLayout.selectedTabPosition == 0) {
-            binding.fabAddRole.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
+        binding.fabAddRole.visibility = if (isUserAdmin && status == "pending" && selectedTab == 0) View.VISIBLE else View.GONE
+        binding.fabAddExpense.visibility = if (selectedTab == 1) View.VISIBLE else View.GONE
+        
+        // Habilitar/Deshabilitar botón de editar evento
+        // Buscamos el botón en el layout de información
+        val btnEditEvent = binding.layoutInfo.findViewById<MaterialButton>(R.id.btnEditEvent)
+        btnEditEvent?.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
+        btnEditEvent?.setOnClickListener {
+            currentEvent?.let { event ->
+                EditEventDialogFragment.newInstance(event).show(childFragmentManager, "EditEventDialogFragment")
+            }
         }
-        
+
+        val btnDeleteEvent = binding.layoutInfo.findViewById<MaterialButton>(R.id.btnDeleteEvent)
+        btnDeleteEvent?.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
+        btnDeleteEvent?.setOnClickListener {
+            showDeleteEventConfirmation()
+        }
+
         if (isUserAdmin) {
-            binding.fabEventAction.visibility = View.VISIBLE
+            binding.btnStatusAction.visibility = if (selectedTab == 3) View.VISIBLE else View.GONE
             when (status) {
                 "pending" -> {
-                    binding.fabEventAction.setImageResource(android.R.drawable.ic_media_play)
-                    binding.fabEventAction.contentDescription = "Iniciar Evento"
+                    binding.btnStatusAction.text = "Iniciar Evento"
                 }
                 "started" -> {
-                    binding.fabEventAction.setImageResource(android.R.drawable.ic_menu_save)
-                    binding.fabEventAction.contentDescription = "Finalizar Evento"
+                    binding.btnStatusAction.text = "Finalizar Evento"
                 }
                 "finished" -> {
-                    binding.fabEventAction.visibility = View.GONE
+                    binding.btnStatusAction.visibility = View.GONE
                 }
             }
         } else {
-            binding.fabEventAction.visibility = View.GONE
+            binding.btnStatusAction.visibility = View.GONE
         }
 
         roleAdapter.setAdminStatus(isUserAdmin && status == "pending")
@@ -202,7 +214,7 @@ class EventDetailFragment : Fragment() {
         }
 
         if (rolesIncomplete.isNotEmpty()) {
-            MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+            MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Roles incompletos")
                 .setMessage("Hay roles obligatorios o con un mínimo de personas que aún no están cubiertos. ¿Quieres que el sistema asigne automáticamente a los participantes disponibles?")
                 .setNegativeButton("No, empezar así") { _, _ ->
@@ -213,14 +225,13 @@ class EventDetailFragment : Fragment() {
                     currentEventId?.let { viewModel.startEvent(it, autoAssign = true) }
                 }
                 .show()
-                .window?.setBackgroundDrawableResource(android.R.color.transparent)
         } else {
             currentEventId?.let { viewModel.startEvent(it, autoAssign = false) }
         }
     }
 
     private fun showFinishConfirmation() {
-        MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Finalizar Evento")
             .setMessage("¿Estás seguro de que quieres finalizar el evento? Esta acción es irreversible y moverá el evento a tu historial. Ya no se podrán realizar más cambios.")
             .setNegativeButton("Cancelar", null)
@@ -230,7 +241,44 @@ class EventDetailFragment : Fragment() {
             .show()
     }
 
+    private fun showDeleteEventConfirmation() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Eliminar Evento")
+            .setMessage("¿Estás seguro de que quieres eliminar permanentemente este evento y todos sus datos? Esta acción no se puede deshacer.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Eliminar") { _, _ ->
+                currentEventId?.let { viewModel.deleteEvent(it) }
+            }
+            .show()
+    }
+
     private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.createEventState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.CreateEventState.Loading -> {
+                        // Opcional: Mostrar progreso
+                    }
+                    is EventViewModel.CreateEventState.Success -> {
+                        // Si el evento ya no existe en el StateFlow, es que fue eliminado
+                        if (viewModel.event.value == null && currentEventId != null) {
+                            Toast.makeText(context, "Evento eliminado", Toast.LENGTH_SHORT).show()
+                            findNavController().navigateUp()
+                        } else {
+                            // Si fue una actualización, el StateFlow de event ya se habrá actualizado
+                            Toast.makeText(context, "Evento actualizado", Toast.LENGTH_SHORT).show()
+                        }
+                        viewModel.resetCreateState()
+                    }
+                    is EventViewModel.CreateEventState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetCreateState()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.joinEventState.collectLatest { state ->
                 when (state) {
@@ -264,6 +312,7 @@ class EventDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.participants.collectLatest { participants ->
                 binding.tvParticipantCount.text = "${participants.size} participantes"
+                participantAdapter.submitList(participants)
                 // Re-check admin status when participants list is updated
                 val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
                 if (userId != null) {
@@ -278,6 +327,76 @@ class EventDetailFragment : Fragment() {
             viewModel.event.collectLatest { event ->
                 event?.let {
                     roleAdapter.setEventStatus(it.status)
+                    
+                    // Actualizar UI con datos reales del evento
+                    binding.tvEventTitleContainer.text = it.name
+                    binding.tvInfoDescription.text = it.description ?: "Sin descripción"
+                    
+                    val tvLocation = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoLocation)
+                    tvLocation?.text = it.location ?: "Ubicación no especificada"
+                    
+                    // Aplicar color del evento dinámicamente SOLO en esta pantalla
+                    it.color?.let { colorStr ->
+                        try {
+                            val colorInt = colorStr.toColorInt()
+                            
+                            // 1. Cabecera: El contenedor del título toma el color del evento
+                            binding.tvEventTitleContainer.background.setTint(colorInt)
+                            binding.tvEventTitleContainer.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_theme_onPrimary))
+                            
+                            // 2. Elementos de interacción superior
+                            binding.cbParticipateDetail.buttonTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                            binding.cbParticipateDetail.setTextColor(colorInt)
+                            
+                            binding.tvParticipantCount.setTextColor(colorInt)
+                            // El icono de grupos junto al contador
+                            val participantContainer = binding.tvParticipantCount.parent as? ViewGroup
+                            participantContainer?.background?.setTint(colorInt)
+                            val groupIcon = participantContainer?.getChildAt(0) as? ImageView
+                            groupIcon?.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+                            // 3. Pestañas (Tabs) - Solo afectan a este TabLayout
+                            binding.tabLayout.setSelectedTabIndicatorColor(colorInt)
+                            binding.tabLayout.setTabTextColors(
+                                ContextCompat.getColor(requireContext(), R.color.md_theme_onSurfaceVariant),
+                                colorInt
+                            )
+
+                            // 4. Títulos de secciones específicos de la pestaña Información
+                            // Usamos findViewWithTag o simplemente IDs directos para no romper nada
+                            view?.findViewById<TextView>(R.id.btnEditEvent)?.let { it.parent as? RelativeLayout }?.let { rel ->
+                                (rel.getChildAt(0) as? TextView)?.setTextColor(colorInt)
+                            }
+                            
+                            // Etiquetas de campos (Descripción, Ubicación, Participantes)
+                            // Buscamos los TextViews que actúan como etiquetas por su texto o posición
+                            binding.layoutInfo.findViewById<TextView>(R.id.tvInfoDescription)?.let { 
+                                // El TextView que está justo encima de la descripción es la etiqueta "Descripción"
+                                val parent = it.parent as? ViewGroup
+                                val index = parent?.indexOfChild(it) ?: -1
+                                if (index > 0) (parent?.getChildAt(index - 1) as? TextView)?.setTextColor(colorInt)
+                                
+                                // Lo mismo para Ubicación
+                                val locView = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoLocation)
+                                val locIndex = parent?.indexOfChild(locView) ?: -1
+                                if (locIndex > 0) (parent?.getChildAt(locIndex - 1) as? TextView)?.setTextColor(colorInt)
+                                
+                                // Y para Participantes
+                                val partView = binding.layoutInfo.findViewById<View>(R.id.rvParticipantsDetail)
+                                val partIndex = parent?.indexOfChild(partView) ?: -1
+                                if (partIndex > 0) (parent?.getChildAt(partIndex - 1) as? TextView)?.setTextColor(colorInt)
+                            }
+
+                            // 5. Botones y FABs - Solo los de esta pantalla
+                            binding.btnStatusAction.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                            binding.btnEditEvent.iconTint = android.content.res.ColorStateList.valueOf(colorInt)
+                            binding.fabAddRole.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                            binding.fabAddExpense.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+                        } catch (e: Exception) {
+                            android.util.Log.e("EventDetail", "Error applying event color: ${e.message}")
+                        }
+                    }
                 }
             }
         }
@@ -311,22 +430,30 @@ class EventDetailFragment : Fragment() {
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_roles)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_expenses)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_dashboard)))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Info"))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Tareas"))
 
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 updateVisibility(tab?.position ?: 0)
+                updateAdminUi()
             }
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
+
+        // Seleccionar tab de Información por defecto (index 3)
+        binding.tabLayout.getTabAt(3)?.select()
+        updateVisibility(3)
     }
 
     private fun updateVisibility(position: Int) {
         binding.rvRoles.visibility = if (position == 0) View.VISIBLE else View.GONE
-        binding.fabAddRole.visibility = if (position == 0 && isUserAdmin) View.VISIBLE else View.GONE
         binding.rvExpenses.visibility = if (position == 1) View.VISIBLE else View.GONE
-        binding.fabAddExpense.visibility = if (position == 1) View.VISIBLE else View.GONE
         binding.layoutDashboard.visibility = if (position == 2) View.VISIBLE else View.GONE
+        binding.layoutInfo.visibility = if (position == 3) View.VISIBLE else View.GONE
+        // position 4 (Tareas) visibility handled by fragment if using ViewPager, 
+        // but here we are using manual visibility.
     }
 
     private fun toggleChart() {
@@ -478,6 +605,10 @@ class EventDetailFragment : Fragment() {
         binding.rvExpenses.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = expenseAdapter
+        }
+        binding.rvParticipantsDetail.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = participantAdapter
         }
     }
 
