@@ -55,6 +55,8 @@ class GroupRepository {
         return withContext(Dispatchers.IO) {
             try {
                 Log.d("GroupRepository", "Fetching members for group: $groupId")
+                
+                // Consulta estándar con join a profiles
                 val response = client.from("group_members")
                     .select(Columns.raw("*, profiles(*)")) {
                         filter {
@@ -62,7 +64,7 @@ class GroupRepository {
                         }
                     }
                 
-                Log.d("GroupRepository", "Raw Response data: ${response.data}")
+                Log.d("GroupRepository", "Raw Response: ${response.data}")
                 
                 val resultList = mutableListOf<Pair<GroupMember, Profile>>()
                 val jsonArray = json.parseToJsonElement(response.data)
@@ -70,45 +72,61 @@ class GroupRepository {
                 if (jsonArray is kotlinx.serialization.json.JsonArray) {
                     for (element in jsonArray) {
                         try {
-                            // Decodificar el miembro (debería ignorar la clave "profiles" por ignoreUnknownKeys)
-                            val member = json.decodeFromJsonElement<GroupMember>(element)
-                            val profileElement = element.jsonObject["profiles"]
+                            val jsonObj = element.jsonObject
                             
-                            // Intentar decodificar el perfil
+                            // Extraer ID de usuario de forma segura
+                            val userId = jsonObj["user_id"]?.let { 
+                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() 
+                            } ?: continue
+
+                            // Mapear Miembro
+                            val member = GroupMember(
+                                group_id = jsonObj["group_id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else groupId } ?: groupId,
+                                user_id = userId,
+                                is_admin = jsonObj["is_admin"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content.toBoolean() else false } ?: false,
+                                status = jsonObj["status"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else "active" } ?: "active"
+                            )
+
+                            // Mapear Perfil (Maneja objeto u objeto dentro de lista)
+                            val profileElement = jsonObj["profiles"]
                             val profile = if (profileElement != null && profileElement !is kotlinx.serialization.json.JsonNull) {
                                 try {
-                                    if (profileElement is kotlinx.serialization.json.JsonArray) {
-                                        if (profileElement.isNotEmpty()) {
-                                            json.decodeFromJsonElement<Profile>(profileElement[0])
-                                        } else null
-                                    } else {
-                                        json.decodeFromJsonElement<Profile>(profileElement)
+                                    val pObj = when (profileElement) {
+                                        is kotlinx.serialization.json.JsonArray -> if (profileElement.isNotEmpty()) profileElement[0].jsonObject else null
+                                        is kotlinx.serialization.json.JsonObject -> profileElement.jsonObject
+                                        else -> null
+                                    }
+
+                                    pObj?.let {
+                                        Profile(
+                                            id = userId,
+                                            full_name = it["full_name"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null },
+                                            username = it["username"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null },
+                                            avatar_url = it["avatar_url"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null }
+                                        )
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("GroupRepository", "Error decoding profile for user ${member.user_id}: ${e.message}")
+                                    Log.e("GroupRepository", "Error parsing profile for $userId: ${e.message}")
                                     null
                                 }
-                            } else {
-                                Log.w("GroupRepository", "No profile data for user ${member.user_id} (possible RLS issue)")
-                                null
-                            }
+                            } else null
 
-                            // Siempre añadir el miembro, incluso con perfil fallback
+                            // Fallback si no hay perfil (para que no desaparezca de la lista)
                             val finalProfile = profile ?: Profile(
-                                id = member.user_id,
+                                id = userId,
                                 full_name = "Usuario desconocido",
-                                username = "usuario_${member.user_id.take(5)}"
+                                username = "usuario_${userId.take(5)}"
                             )
+                            
                             resultList.add(member to finalProfile)
                         } catch (e: Exception) {
-                            Log.e("GroupRepository", "Error decoding member entry: ${e.message}")
+                            Log.e("GroupRepository", "Error processing member row: ${e.message}")
                         }
                     }
                 }
-                Log.d("GroupRepository", "Successfully loaded ${resultList.size} members with profiles")
                 Result.success(resultList)
             } catch (e: Exception) {
-                Log.e("GroupRepository", "Fatal error in getGroupMembers: ${e.message}", e)
+                Log.e("GroupRepository", "Fatal error loading members: ${e.message}")
                 Result.failure(e)
             }
         }
