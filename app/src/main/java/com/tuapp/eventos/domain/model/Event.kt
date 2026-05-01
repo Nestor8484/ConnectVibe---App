@@ -109,10 +109,12 @@ data class Event(
     
     @Serializable(with = TimestampSerializer::class)
     @SerialName("created_at")
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val createdAt: Date? = null,
     
     @Serializable(with = TimestampSerializer::class)
     @SerialName("updated_at")
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val updatedAt: Date? = null,
     
     @SerialName("group_id")
