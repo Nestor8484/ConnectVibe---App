@@ -57,6 +57,7 @@ class AddExpenseFragment : Fragment() {
                     date = Date()
                 )
                 
+                android.util.Log.d("AddExpense", "Enviando gasto: $expense")
                 viewModel.addExpense(eventId, expense)
                 Toast.makeText(context, "Gasto guardado correctamente", Toast.LENGTH_SHORT).show()
                 findNavController().popBackStack()
