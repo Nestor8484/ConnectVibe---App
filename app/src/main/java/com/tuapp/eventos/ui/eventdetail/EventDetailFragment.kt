@@ -447,6 +447,30 @@ class EventDetailFragment : Fragment() {
             }
         }
 
+        // Observar estado de operaciones de gastos
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.expenseOpState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.RoleOpState.Loading -> {
+                        // Podrías mostrar un loading en el botón del diálogo si fuera necesario
+                    }
+                    is EventViewModel.RoleOpState.Success -> {
+                        Toast.makeText(context, "Gasto guardado correctamente", Toast.LENGTH_SHORT).show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    is EventViewModel.RoleOpState.Error -> {
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Error")
+                            .setMessage("No se pudo guardar el gasto: ${state.message}")
+                            .setPositiveButton("Aceptar", null)
+                            .show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
         // Observar gastos para el Dashboard
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.expenses.collectLatest { expenses ->
@@ -720,12 +744,46 @@ class EventDetailFragment : Fragment() {
         val autoCategory = dialogView.findViewById<AutoCompleteTextView>(R.id.etExpenseCategory)
         autoCategory.setAdapter(adapter)
 
+        val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseName)
+        val etAmount = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseAmount)
         val btnCreate = dialogView.findViewById<MaterialButton>(R.id.btnCreateExpense)
+
         btnCreate.setOnClickListener {
+            val name = etName.text.toString()
+            val category = autoCategory.text.toString()
+            val amountStr = etAmount.text.toString()
+            val eventId = currentEventId
+
+            if (name.isBlank() || category.isBlank() || amountStr.isBlank() || eventId == null) {
+                Toast.makeText(context, "Por favor, rellena todos los campos obligatorios", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val amount = amountStr.toDoubleOrNull()
+            if (amount == null || amount <= 0) {
+                Toast.makeText(context, "Introduce un importe válido", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+            val expense = Expense(
+                eventId = eventId,
+                name = name,
+                amount = amount,
+                category = category,
+                payerId = userId,
+                date = Date()
+            )
+
+            viewModel.addExpense(eventId, expense)
             dialog.dismiss()
         }
 
         dialog.show()
+
+        // Forzar ancho al 90%
+        val width = (resources.displayMetrics.widthPixels * 0.90).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     private fun setupRecyclerViews() {

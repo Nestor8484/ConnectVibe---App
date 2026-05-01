@@ -449,7 +449,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="0% de las tareas del evento completadas" />
+                            android:text="0% de las tareas del evento completadas"
                             android:textAlignment="center"
                             android:textSize="12sp"
                             android:textColor="@color/md_theme_onSurfaceVariant"/>

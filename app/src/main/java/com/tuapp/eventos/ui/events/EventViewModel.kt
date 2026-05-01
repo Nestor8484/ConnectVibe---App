@@ -39,6 +39,9 @@ class EventViewModel : ViewModel() {
     private val _roleOpState = MutableStateFlow<RoleOpState>(RoleOpState.Idle)
     val roleOpState: StateFlow<RoleOpState> = _roleOpState.asStateFlow()
 
+    private val _expenseOpState = MutableStateFlow<RoleOpState>(RoleOpState.Idle)
+    val expenseOpState: StateFlow<RoleOpState> = _expenseOpState.asStateFlow()
+
     private val _roleMembers = MutableStateFlow<List<EventRoleMember>>(emptyList())
     val roleMembers: StateFlow<List<EventRoleMember>> = _roleMembers.asStateFlow()
 
@@ -139,9 +142,19 @@ class EventViewModel : ViewModel() {
 
     fun addExpense(eventId: String, expense: Expense) {
         viewModelScope.launch {
-            repository.addExpense(eventId, expense)
-            loadExpenses(eventId)
+            _expenseOpState.value = RoleOpState.Loading
+            val result = repository.addExpense(eventId, expense)
+            if (result.isSuccess) {
+                _expenseOpState.value = RoleOpState.Success
+                loadExpenses(eventId)
+            } else {
+                _expenseOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al añadir gasto")
+            }
         }
+    }
+
+    fun resetExpenseOpState() {
+        _expenseOpState.value = RoleOpState.Idle
     }
 
     fun toggleRoleAssignment(roleId: String, userId: String, eventId: String, isAssigning: Boolean) {

@@ -13,6 +13,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -251,16 +252,18 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun createRole(role: Role): Result<Unit> {
         return try {
-            val roleJson = Json.encodeToJsonElement(Role.serializer(), role).jsonObject.toMutableMap()
+            val jsonConfig = Json { encodeDefaults = false; ignoreUnknownKeys = true }
+            val roleJson = jsonConfig.encodeToJsonElement(Role.serializer(), role).jsonObject.toMutableMap()
             roleJson.remove("id")
             roleJson.remove("created_at")
             
-            val filteredJson = roleJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
+            val finalJson = JsonObject(roleJson)
+            android.util.Log.d("EventRepository", "Inserting role: $finalJson")
             
-            client.from("event_roles").insert(filteredJson)
+            client.from("event_roles").insert(finalJson)
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error creating role: ${e.message}")
+            android.util.Log.e("EventRepository", "Error creating role: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -377,20 +380,33 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun addExpense(eventId: String, expense: Expense): Result<Unit> {
         return try {
-            // Log for debugging
-            android.util.Log.d("EventRepository", "Preparing to save expense: $expense")
+            android.util.Log.d("EventRepository", "Preparing to save expense to DB: ${expense.name}")
             
-            val expenseJson = Json.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
-            expenseJson.remove("id") // Always let DB generate UUID
+            // Usar una configuración de Json que no incluya nulos/defaults si no es necesario
+            val jsonConfig = Json { 
+                encodeDefaults = false 
+                ignoreUnknownKeys = true
+            }
             
-            // If date is null in object, remove it from JSON so DB uses DEFAULT now()
+            val expenseJson = jsonConfig.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
+            
+            // Limpieza de campos automáticos para evitar errores de restricción
+            expenseJson.remove("id")
+            expenseJson.remove("created_at")
+            expenseJson.remove("updated_at")
+            
+            // Si la fecha es nula, dejamos que la base de datos use el valor por defecto
             if (expense.date == null) {
                 expenseJson.remove("date")
             }
             
-            val filteredJson = expenseJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
+            val finalJsonObject = JsonObject(expenseJson)
+            android.util.Log.d("EventRepository", "Final JSON for expense insert: $finalJsonObject")
             
-            client.from("expenses").insert(filteredJson)
+            // Ejecutar la inserción
+            client.from("expenses").insert(finalJsonObject)
+            
+            android.util.Log.d("EventRepository", "Expense insert operation called successfully")
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Failed to add expense: ${e.message}", e)
