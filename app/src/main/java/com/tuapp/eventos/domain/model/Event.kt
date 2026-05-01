@@ -1,8 +1,10 @@
 package com.tuapp.eventos.domain.model
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -72,9 +74,11 @@ data class Participant(
     val roleId: String? = null
 )
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class Event(
     @SerialName("id")
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val id: String? = null,
     
     @SerialName("created_by")
@@ -127,6 +131,6 @@ data class Event(
     val color: String? = null,
     
     // UI temporary state (Transient - not sent to DB)
-    @kotlinx.serialization.Transient
+    @Transient
     val isUserParticipating: Boolean = false
 )
