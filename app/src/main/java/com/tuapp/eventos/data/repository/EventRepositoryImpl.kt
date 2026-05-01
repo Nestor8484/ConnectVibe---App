@@ -80,7 +80,13 @@ class EventRepositoryImpl : EventRepository {
                 isAdmin = true,
                 status = "active"
             )
-            client.from("event_members").insert(ownerMember)
+            
+            // Clean member JSON as well
+            val ownerJson = Json.encodeToJsonElement(EventMember.serializer(), ownerMember).jsonObject.toMutableMap()
+            ownerJson.remove("joined_at")
+            ownerJson.remove("created_at")
+            
+            client.from("event_members").insert(ownerJson.filterValues { it !is kotlinx.serialization.json.JsonNull })
 
             Result.success(eventId)
         } catch (e: Exception) {
@@ -126,7 +132,14 @@ class EventRepositoryImpl : EventRepository {
                 isAdmin = false,
                 status = "active"
             )
-            client.from("event_members").insert(member)
+            
+            // Clean member JSON to avoid null date constraint errors
+            val memberJson = Json.encodeToJsonElement(EventMember.serializer(), member).jsonObject.toMutableMap()
+            memberJson.remove("joined_at")
+            memberJson.remove("created_at")
+            
+            client.from("event_members").insert(memberJson.filterValues { it !is kotlinx.serialization.json.JsonNull })
+
             android.util.Log.d("EventRepository", "Successfully joined event")
             Result.success(Unit)
         } catch (e: Exception) {
