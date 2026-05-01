@@ -521,7 +521,7 @@ class EventDetailFragment : Fragment() {
         }
 
         // Agrupar por categoría
-        val byCategory = expenses.groupBy { it.category }
+        val byCategory = expenses.groupBy { it.description ?: "Otros" }
         val chartData = mutableListOf<Pair<Float, Int>>()
         
         // Colores predefinidos para las categorías
@@ -535,7 +535,7 @@ class EventDetailFragment : Fragment() {
         )
 
         var colorIndex = 0
-        byCategory.forEach { (category, list) ->
+        byCategory.forEach { (_, list) ->
             val catTotal = list.sumOf { it.amount }
             val percentage = (catTotal / total * 100).toFloat()
             chartData.add(Pair(percentage, colors[colorIndex % colors.size]))
@@ -555,7 +555,9 @@ class EventDetailFragment : Fragment() {
         val colors = listOf(0xFF1565C0.toInt(), 0xFF1E88E5.toInt(), 0xFF42A5F5.toInt(), 0xFF90CAF9.toInt())
         var colorIndex = 0
         
-        val sortedCategories = byCategory.entries.sortedByDescending { it.value.sumOf { e -> e.amount } }
+        val sortedCategories = byCategory.entries.sortedByDescending { entry -> 
+            entry.value.sumOf { exp: Expense -> exp.amount } 
+        }
         
         for (entry in sortedCategories) {
             val catTotal = entry.value.sumOf { it.amount }
@@ -720,9 +722,9 @@ class EventDetailFragment : Fragment() {
         val tvType = dialogView.findViewById<TextView>(R.id.tvDialogExpenseType)
         val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnCloseExpense)
 
-        tvName.text = expense.name
+        tvName.text = expense.title
         tvAmount.text = String.format(Locale.getDefault(), "%.2f€", expense.amount)
-        tvType.text = "Categoría: ${expense.category}"
+        tvType.text = "Categoría: ${expense.description ?: "Otros"}"
 
         btnClose.setOnClickListener { dialog.dismiss() }
 
@@ -768,11 +770,12 @@ class EventDetailFragment : Fragment() {
             val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
             val expense = Expense(
                 eventId = eventId,
-                name = name,
+                createdBy = userId ?: "",
+                title = name,
                 amount = amount,
-                category = category,
-                payerId = userId,
-                date = Date()
+                description = category,
+                paidByUserId = userId,
+                incurredAt = Date()
             )
 
             viewModel.addExpense(eventId, expense)

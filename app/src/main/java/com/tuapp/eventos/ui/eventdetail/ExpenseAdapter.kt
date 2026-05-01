@@ -31,9 +31,9 @@ class ExpenseAdapter(
 
     class ExpenseViewHolder(private val binding: ItemExpenseBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(expense: Expense, eventColor: String?, onExpenseClick: (Expense) -> Unit) {
-            binding.tvExpenseName.text = expense.name
+            binding.tvExpenseName.text = expense.title
             binding.tvExpenseAmount.text = String.format("%.2f€", expense.amount)
-            binding.tvExpenseType.text = expense.category
+            binding.tvExpenseType.text = expense.description ?: "Otros"
             
             eventColor?.let { colorStr ->
                 try {
