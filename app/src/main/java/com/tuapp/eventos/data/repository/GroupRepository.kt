@@ -272,14 +272,17 @@ class GroupRepository {
                     for (element in jsonArray) {
                         try {
                             val jsonObj = element.jsonObject
-                            // Extraer ID manualmente para asegurar compatibilidad String/Int
-                            val id = jsonObj["id"]?.let { 
+                            // Extraer ID de forma segura sin que falle la decodificación si es número
+                            val idStr = jsonObj["id"]?.let { 
                                 if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() 
                             }
                             
-                            val notification = json.decodeFromJsonElement<Notification>(element).copy(id = id)
-                            val groupElement = jsonObj["groups"]
+                            // Decodificar el resto (evitamos conflicto con el ID si es numérico)
+                            val notification = json.decodeFromJsonElement<Notification>(
+                                kotlinx.serialization.json.JsonObject(jsonObj.filterKeys { it != "id" })
+                            ).copy(id = idStr)
                             
+                            val groupElement = jsonObj["groups"]
                             if (groupElement != null) {
                                 val group = json.decodeFromJsonElement<Group>(groupElement)
                                 resultList.add(notification to group)
@@ -340,13 +343,13 @@ class GroupRepository {
     suspend fun deleteNotification(notificationId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d("GroupRepository", "Eliminando notificación ID: $notificationId")
+                Log.d("GroupRepository", "Intentando eliminar notificación ID: $notificationId")
                 if (notificationId.isBlank()) return@withContext Result.failure(Exception("ID de notificación vacío"))
 
                 val numericId = notificationId.toLongOrNull()
                 
-                // Realizamos el borrado y pedimos que nos devuelva lo borrado para confirmar
-                val response = client.from("notifications").delete {
+                // Realizamos el borrado directo
+                client.from("notifications").delete {
                     filter {
                         if (numericId != null) {
                             eq("id", numericId)
@@ -354,10 +357,9 @@ class GroupRepository {
                             eq("id", notificationId)
                         }
                     }
-                    select() 
                 }
                 
-                Log.d("GroupRepository", "Resultado del borrado en Supabase: ${response.data}")
+                Log.d("GroupRepository", "Comando de borrado enviado para ID: $notificationId")
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e("GroupRepository", "Excepción al borrar notificación: ${e.message}")
