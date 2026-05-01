@@ -42,9 +42,9 @@ class AddExpenseFragment : Fragment() {
         binding.btnAddExpense.setOnClickListener {
             val amountStr = binding.etAmount.text.toString()
             val title = binding.etExpenseName.text.toString()
-            val description = binding.atvCategory.text.toString()
+            val category = binding.atvCategory.text.toString()
             
-            if (amountStr.isNotBlank() && title.isNotBlank()) {
+            if (amountStr.isNotBlank() && title.isNotBlank() && category.isNotBlank()) {
                 val amount = amountStr.toDoubleOrNull() ?: 0.0
                 val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: ""
                 
@@ -52,7 +52,7 @@ class AddExpenseFragment : Fragment() {
                     eventId = eventId,
                     createdBy = userId,
                     title = title,
-                    description = description,
+                    category = category,
                     amount = amount,
                     currency = "EUR",
                     paidByUserId = userId,
@@ -65,6 +65,7 @@ class AddExpenseFragment : Fragment() {
             } else {
                 if (amountStr.isBlank()) binding.etAmount.error = "Importe requerido"
                 if (title.isBlank()) binding.etExpenseName.error = "Nombre requerido"
+                if (category.isBlank()) binding.atvCategory.error = "Categoría requerida"
             }
         }
     }

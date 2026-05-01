@@ -6,11 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.children
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.Fragment
@@ -342,6 +344,9 @@ class EventDetailFragment : Fragment() {
                         try {
                             val colorInt = colorStr.toColorInt()
                             
+                            // Actualizar color en el adaptador de gastos
+                            expenseAdapter.updateEventColor(colorStr)
+                            
                             // Calcular colores derivados (estilo roles: fondo suave + borde fuerte)
                             // Aumentamos ligeramente la opacidad del fondo (15%) para que se vea más
                             val alphaColor = (0.15 * 255).toInt() shl 24 or (colorInt and 0x00FFFFFF)
@@ -415,6 +420,30 @@ class EventDetailFragment : Fragment() {
                             binding.btnEditEvent.iconTint = android.content.res.ColorStateList.valueOf(colorInt)
                             binding.fabAddRole.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
                             binding.fabAddExpense.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+
+                            // 6. Dashboard - Card de Resumen y Progreso
+                            val summaryCard = binding.layoutDashboard.getChildAt(0) as? com.google.android.material.card.MaterialCardView
+                            summaryCard?.setCardBackgroundColor(alphaColor)
+                            summaryCard?.strokeColor = colorInt
+                            summaryCard?.strokeWidth = (2 * density).toInt()
+                            
+                            binding.tvTotalExpense.setTextColor(colorInt)
+                            binding.tvRolesCovered.setTextColor(colorInt)
+                            
+                            // Títulos de Dashboard
+                            binding.layoutDashboard.findViewById<TextView>(R.id.tvTaskProgress)?.parent?.let { parent ->
+                                (parent as? ViewGroup)?.let { vg ->
+                                    for (i in 0 until vg.childCount) {
+                                        val child = vg.getChildAt(i)
+                                        if (child is TextView && child.id != R.id.tvTaskProgress && child.id != R.id.tvTotalExpense && child.id != R.id.tvRolesCovered) {
+                                            child.setTextColor(colorInt)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            binding.taskProgressBar.setIndicatorColor(colorInt)
+                            binding.taskProgressBar.trackColor = alphaColor
 
                         } catch (e: Exception) {
                             android.util.Log.e("EventDetail", "Error applying event color: ${e.message}")
@@ -514,47 +543,83 @@ class EventDetailFragment : Fragment() {
         val total = expenses.sumOf { it.amount }
         binding.tvTotalExpense.text = String.format(Locale.getDefault(), "%.2f€", total)
 
+        val eventColorStr = viewModel.event.value?.color
+        val eventColorInt = try {
+            eventColorStr?.toColorInt() ?: 0xFF1565C0.toInt()
+        } catch (e: Exception) {
+            0xFF1565C0.toInt()
+        }
+
         if (expenses.isEmpty()) {
             binding.viewPieChart.setData(emptyList())
-            // Opcional: ocultar o mostrar mensaje de "Sin gastos"
+            // Limpiar leyenda si no hay gastos
+            binding.layoutExpenseLegend.removeAllViews()
             return
         }
 
         // Agrupar por categoría
-        val byCategory = expenses.groupBy { it.description ?: "Otros" }
+        val byCategory = expenses.groupBy { it.category }
         val chartData = mutableListOf<Pair<Float, Int>>()
         
-        // Colores predefinidos para las categorías
-        val colors = listOf(
-            0xFF1565C0.toInt(), // Azul Oscuro
-            0xFF1E88E5.toInt(), // Azul Medio
-            0xFF42A5F5.toInt(), // Azul Claro
-            0xFF90CAF9.toInt(), // Azul Muy Claro
-            0xFFBBDEFB.toInt(), // Azul Pálido
-            0xFFE3F2FD.toInt()  // Azul Blanquecino
-        )
-
+        // Generar variantes del color del evento para las categorías
         var colorIndex = 0
-        byCategory.forEach { (_, list) ->
+        val sortedEntries = byCategory.entries.sortedByDescending { it.value.sumOf { exp -> exp.amount } }
+        
+        // Obtener el GridLayout de la leyenda
+        val gridLayout = binding.layoutExpenseLegend
+        gridLayout.removeAllViews()
+
+        sortedEntries.forEach { (category, list) ->
             val catTotal = list.sumOf { it.amount }
             val percentage = (catTotal / total * 100).toFloat()
-            chartData.add(Pair(percentage, colors[colorIndex % colors.size]))
+            
+            // Variamos la opacidad o el brillo para distinguir categorías usando el color base del evento
+            val alpha = (1.0 - (colorIndex * 0.15)).coerceAtLeast(0.3)
+            val categoryColor = ( (alpha * 255).toInt() shl 24 ) or (eventColorInt and 0x00FFFFFF)
+            
+            chartData.add(Pair(percentage, categoryColor))
+            
+            // Añadir a la leyenda dinámica
+            val legendItem = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(4, 4, 4, 4)
+                val params = android.widget.GridLayout.LayoutParams()
+                params.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                layoutParams = params
+                
+                val colorView = View(context).apply {
+                    val size = (12 * resources.displayMetrics.density).toInt()
+                    layoutParams = LinearLayout.LayoutParams(size, size)
+                    setBackgroundColor(categoryColor)
+                }
+                
+                val textView = TextView(context).apply {
+                    text = " $category (${String.format("%.2f€", catTotal)})"
+                    textSize = 12f
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                        marginStart = (8 * resources.displayMetrics.density).toInt()
+                    }
+                }
+                
+                addView(colorView)
+                addView(textView)
+            }
+            gridLayout?.addView(legendItem)
+
             colorIndex++
         }
 
         binding.viewPieChart.setData(chartData)
         
-        // Actualizar barras (simple visual hack para el ejemplo, o podrías implementar un BarChart real)
-        updateBarChart(byCategory, total)
+        updateBarChart(byCategory, total, eventColorInt)
     }
 
-    private fun updateBarChart(byCategory: Map<String, List<Expense>>, total: Double) {
+    private fun updateBarChart(byCategory: Map<String, List<Expense>>, total: Double, eventColorInt: Int) {
         val barContainer = binding.viewBarChart
         barContainer.removeAllViews()
         
-        val colors = listOf(0xFF1565C0.toInt(), 0xFF1E88E5.toInt(), 0xFF42A5F5.toInt(), 0xFF90CAF9.toInt())
         var colorIndex = 0
-        
         val sortedCategories = byCategory.entries.sortedByDescending { entry -> 
             entry.value.sumOf { exp: Expense -> exp.amount } 
         }
@@ -563,11 +628,14 @@ class EventDetailFragment : Fragment() {
             val catTotal = entry.value.sumOf { it.amount }
             val weight = (catTotal / total).toFloat()
             
+            val alpha = (1.0 - (colorIndex * 0.15)).coerceAtLeast(0.3)
+            val categoryColor = ( (alpha * 255).toInt() shl 24 ) or (eventColorInt and 0x00FFFFFF)
+            
             val bar = View(context).apply {
                 layoutParams = LinearLayout.LayoutParams(0, (200 * weight * resources.displayMetrics.density).toInt(), 1f).apply {
                     setMargins(8, 0, 8, 0)
                 }
-                setBackgroundColor(colors[colorIndex % colors.size])
+                setBackgroundColor(categoryColor)
             }
             barContainer.addView(bar)
             colorIndex++
@@ -724,7 +792,10 @@ class EventDetailFragment : Fragment() {
 
         tvName.text = expense.title
         tvAmount.text = String.format(Locale.getDefault(), "%.2f€", expense.amount)
-        tvType.text = "Categoría: ${expense.description ?: "Otros"}"
+        tvType.text = "Categoría: ${expense.category}"
+        val tvDesc = dialogView.findViewById<TextView>(R.id.tvDialogExpenseDescription)
+        tvDesc?.text = expense.description ?: "Sin descripción"
+        tvDesc?.visibility = if (expense.description.isNullOrBlank()) View.GONE else View.VISIBLE
 
         btnClose.setOnClickListener { dialog.dismiss() }
 
@@ -747,12 +818,14 @@ class EventDetailFragment : Fragment() {
         autoCategory.setAdapter(adapter)
 
         val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseName)
+        val etDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseDescription)
         val etAmount = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseAmount)
         val btnCreate = dialogView.findViewById<MaterialButton>(R.id.btnCreateExpense)
 
         btnCreate.setOnClickListener {
             val name = etName.text.toString()
             val category = autoCategory.text.toString()
+            val description = etDescription?.text.toString()
             val amountStr = etAmount.text.toString()
             val eventId = currentEventId
 
@@ -773,7 +846,8 @@ class EventDetailFragment : Fragment() {
                 createdBy = userId ?: "",
                 title = name,
                 amount = amount,
-                description = category,
+                category = category,
+                description = description,
                 paidByUserId = userId,
                 incurredAt = Date()
             )

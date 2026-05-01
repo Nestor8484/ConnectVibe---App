@@ -48,6 +48,16 @@
             tools:text="Tipo: Comida" />
 
         <TextView
+            android:id="@+id/tvDialogExpenseDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textAlignment="center"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="14sp"
+            tools:text="Esta es la descripción del gasto" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"

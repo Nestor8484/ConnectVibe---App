@@ -400,6 +400,7 @@
 
                         <!-- Leyenda detallada -->
                         <GridLayout
+                            android:id="@+id/layoutExpenseLegend"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:columnCount="2"

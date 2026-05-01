@@ -21,6 +21,9 @@ data class Expense(
     @SerialName("title")
     val title: String,
 
+    @SerialName("category")
+    val category: String,
+
     @SerialName("description")
     val description: String? = null,
     

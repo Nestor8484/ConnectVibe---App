@@ -33,7 +33,7 @@ class ExpenseAdapter(
         fun bind(expense: Expense, eventColor: String?, onExpenseClick: (Expense) -> Unit) {
             binding.tvExpenseName.text = expense.title
             binding.tvExpenseAmount.text = String.format("%.2f€", expense.amount)
-            binding.tvExpenseType.text = expense.description ?: "Otros"
+            binding.tvExpenseType.text = expense.category
             
             eventColor?.let { colorStr ->
                 try {
@@ -42,6 +42,11 @@ class ExpenseAdapter(
                     
                     binding.ivExpenseIcon.imageTintList = ColorStateList.valueOf(colorInt)
                     binding.tvExpenseAmount.setTextColor(colorInt)
+                    
+                    // Aplicar color al borde de la tarjeta
+                    val cardView = binding.root as? com.google.android.material.card.MaterialCardView
+                    cardView?.strokeColor = colorInt
+                    cardView?.strokeWidth = (1.5 * binding.root.resources.displayMetrics.density).toInt()
                     
                     // Estilo de la etiqueta de categoría (fondo suave + texto color evento)
                     val categoryBg = binding.tvExpenseType.background.mutate() as? android.graphics.drawable.GradientDrawable
