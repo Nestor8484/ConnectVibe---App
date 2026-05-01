@@ -210,6 +210,8 @@ class EventRepositoryImpl : EventRepository {
                     }
                 }
             
+            android.util.Log.d("DEBUG_SQL", "Participantes RAW: ${response.data}")
+            
             val jsonElement = Json.parseToJsonElement(response.data)
             if (jsonElement !is kotlinx.serialization.json.JsonArray) {
                 return Result.success(emptyList())
