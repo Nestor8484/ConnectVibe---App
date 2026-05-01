@@ -35,6 +35,8 @@ object DateSerializer : KSerializer<Date> {
 object TimestampSerializer : KSerializer<Date> {
     private val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
 
+    fun formatDate(date: Date): String = format.format(date)
+
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Timestamp", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: Date) {
@@ -93,11 +95,11 @@ data class Event(
     @SerialName("slug")
     val slug: String? = null,
     
-    @Serializable(with = DateSerializer::class)
+    @Serializable(with = TimestampSerializer::class)
     @SerialName("start_date")
     val startDate: Date? = null,
     
-    @Serializable(with = DateSerializer::class)
+    @Serializable(with = TimestampSerializer::class)
     @SerialName("end_date")
     val endDate: Date? = null,
     
