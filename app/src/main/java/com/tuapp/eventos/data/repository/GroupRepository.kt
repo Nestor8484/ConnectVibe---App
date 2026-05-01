@@ -74,9 +74,9 @@ class GroupRepository {
                             val member = json.decodeFromJsonElement<GroupMember>(element)
                             val profileElement = element.jsonObject["profiles"]
                             
-                            if (profileElement != null && profileElement !is kotlinx.serialization.json.JsonNull) {
-                                // Soporte tanto para objeto simple como para lista
-                                val profile = try {
+                            // Intentar decodificar el perfil
+                            val profile = if (profileElement != null && profileElement !is kotlinx.serialization.json.JsonNull) {
+                                try {
                                     if (profileElement is kotlinx.serialization.json.JsonArray) {
                                         if (profileElement.isNotEmpty()) {
                                             json.decodeFromJsonElement<Profile>(profileElement[0])
@@ -88,21 +88,20 @@ class GroupRepository {
                                     Log.e("GroupRepository", "Error decoding profile for user ${member.user_id}: ${e.message}")
                                     null
                                 }
-                                
-                                // Si el perfil es nulo, creamos uno genérico para que el usuario al menos aparezca en la lista
-                                val finalProfile = profile ?: Profile(
-                                    id = member.user_id,
-                                    full_name = "Usuario desconocido",
-                                    username = "usuario_${member.user_id.take(5)}"
-                                )
-                                resultList.add(member to finalProfile)
                             } else {
-                                Log.w("GroupRepository", "No profile found for user ${member.user_id} (RLS or missing data)")
-                                // Opcional: Podríamos añadir el miembro con un perfil genérico si no tiene perfil
+                                Log.w("GroupRepository", "No profile data for user ${member.user_id} (possible RLS issue)")
+                                null
                             }
+
+                            // Siempre añadir el miembro, incluso con perfil fallback
+                            val finalProfile = profile ?: Profile(
+                                id = member.user_id,
+                                full_name = "Usuario desconocido",
+                                username = "usuario_${member.user_id.take(5)}"
+                            )
+                            resultList.add(member to finalProfile)
                         } catch (e: Exception) {
                             Log.e("GroupRepository", "Error decoding member entry: ${e.message}")
-                            Log.e("GroupRepository", "Problematic element: $element")
                         }
                     }
                 }
