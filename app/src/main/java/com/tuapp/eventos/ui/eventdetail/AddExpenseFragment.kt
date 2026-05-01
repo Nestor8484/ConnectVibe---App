@@ -8,12 +8,18 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.fragment.app.activityViewModels
 import com.tuapp.eventos.databinding.FragmentAddExpenseBinding
+import com.tuapp.eventos.domain.model.Expense
+import com.tuapp.eventos.ui.events.EventViewModel
+import java.util.Date
 
 class AddExpenseFragment : Fragment() {
 
     private var _binding: FragmentAddExpenseBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: EventViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -29,21 +35,31 @@ class AddExpenseFragment : Fragment() {
         val eventId = arguments?.getString("eventId") ?: ""
 
         setupToolbar()
-        setupPayerDropdown()
+        setupCategoryDropdown()
 
         binding.btnAddExpense.setOnClickListener {
             val amountStr = binding.etAmount.text.toString()
-            val description = binding.etExpenseDescription.text.toString()
+            val name = binding.etExpenseName.text.toString()
+            val category = binding.atvCategory.text.toString()
             
-            if (amountStr.isNotBlank() && description.isNotBlank()) {
+            if (amountStr.isNotBlank() && name.isNotBlank() && category.isNotBlank()) {
                 val amount = amountStr.toDoubleOrNull() ?: 0.0
-                // In a real flow, we'd get the actual payer ID from the dropdown selection
-                // and use a ViewModel to save it to Supabase.
-                Toast.makeText(context, "Expense of €$amount saved", Toast.LENGTH_SHORT).show()
+                
+                val expense = Expense(
+                    eventId = eventId,
+                    name = name,
+                    amount = amount,
+                    category = category,
+                    date = Date()
+                )
+                
+                viewModel.addExpense(eventId, expense)
+                Toast.makeText(context, "Gasto guardado correctamente", Toast.LENGTH_SHORT).show()
                 findNavController().popBackStack()
             } else {
-                if (amountStr.isBlank()) binding.etAmount.error = "Amount required"
-                if (description.isBlank()) binding.etExpenseDescription.error = "Description required"
+                if (amountStr.isBlank()) binding.etAmount.error = "Importe requerido"
+                if (name.isBlank()) binding.etExpenseName.error = "Nombre requerido"
+                if (category.isBlank()) binding.atvCategory.error = "Categoría requerida"
             }
         }
     }
@@ -54,10 +70,10 @@ class AddExpenseFragment : Fragment() {
         }
     }
 
-    private fun setupPayerDropdown() {
-        val participants = listOf("John", "Alice", "Bob")
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, participants)
-        binding.atvPayer.setAdapter(adapter)
+    private fun setupCategoryDropdown() {
+        val categories = listOf("Comida", "Bebida", "Transporte", "Alquiler", "Decoración", "Otros")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
+        binding.atvCategory.setAdapter(adapter)
     }
 
     override fun onDestroyView() {

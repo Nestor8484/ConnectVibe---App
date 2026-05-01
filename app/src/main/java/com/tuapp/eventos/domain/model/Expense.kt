@@ -9,19 +9,17 @@ data class Expense(
     val id: String? = null,
     @SerialName("event_id")
     val eventId: String,
-    @SerialName("description")
-    val description: String,
+    @SerialName("name")
+    val name: String,
     @SerialName("amount")
     val amount: Double,
+    @SerialName("category")
+    val category: String,
     @SerialName("payer_id")
-    val payerId: String,
+    val payerId: String? = null,
     @Serializable(with = TimestampSerializer::class)
     @SerialName("date")
-    val date: java.util.Date,
-    @SerialName("receipt_url")
-    val receiptUrl: String? = null,
-    @SerialName("split_strategy")
-    val splitStrategy: SplitStrategy = SplitStrategy.EQUALLY
+    val date: java.util.Date? = null
 )
 
 @Serializable

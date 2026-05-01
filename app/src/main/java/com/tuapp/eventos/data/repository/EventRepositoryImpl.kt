@@ -344,7 +344,11 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun addExpense(eventId: String, expense: Expense) {
         try {
-            client.from("expenses").insert(expense.copy(eventId = eventId))
+            val expenseJson = Json.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
+            expenseJson.remove("id")
+            val filteredJson = expenseJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
+            
+            client.from("expenses").insert(filteredJson)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error adding expense: ${e.message}")
         }

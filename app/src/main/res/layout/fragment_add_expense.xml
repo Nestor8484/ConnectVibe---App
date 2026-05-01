@@ -58,11 +58,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:hint="Description"
+                    android:hint="Nombre del gasto"
                     app:hintTextAppearance="@style/TextAppearance.MaterialComponents.Subtitle1">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etExpenseDescription"
+                        android:id="@+id/etExpenseName"
                         android:layout_width="match_parent"
                         android:layout_height="64dp"
                         android:textSize="18sp" />
@@ -73,27 +73,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
-                    android:hint="Who paid?"
+                    android:hint="Categoría"
                     app:hintTextAppearance="@style/TextAppearance.MaterialComponents.Subtitle1">
 
                     <AutoCompleteTextView
-                        android:id="@+id/atvPayer"
+                        android:id="@+id/atvCategory"
                         android:layout_width="match_parent"
                         android:layout_height="64dp"
                         android:inputType="none"
                         android:textSize="18sp" />
                 </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnUploadReceipt"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="64dp"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/upload_receipt"
-                    android:textSize="18sp"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_camera" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAddExpense"
