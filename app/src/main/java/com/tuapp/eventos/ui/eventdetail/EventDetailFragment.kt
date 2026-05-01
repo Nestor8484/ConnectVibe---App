@@ -583,9 +583,9 @@ class EventDetailFragment : Fragment() {
         val tvType = dialogView.findViewById<TextView>(R.id.tvDialogExpenseType)
         val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnCloseExpense)
 
-        tvName.text = expense.description
+        tvName.text = expense.name
         tvAmount.text = String.format(Locale.getDefault(), "%.2f€", expense.amount)
-        tvType.text = "Categoría: Comida y Bebida"
+        tvType.text = "Categoría: ${expense.category}"
 
         btnClose.setOnClickListener { dialog.dismiss() }
 
