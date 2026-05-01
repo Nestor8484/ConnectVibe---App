@@ -363,15 +363,26 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
-    override suspend fun addExpense(eventId: String, expense: Expense) {
-        try {
+    override suspend fun addExpense(eventId: String, expense: Expense): Result<Unit> {
+        return try {
+            // Log for debugging
+            android.util.Log.d("EventRepository", "Preparing to save expense: $expense")
+            
             val expenseJson = Json.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
-            expenseJson.remove("id")
+            expenseJson.remove("id") // Always let DB generate UUID
+            
+            // If date is null in object, remove it from JSON so DB uses DEFAULT now()
+            if (expense.date == null) {
+                expenseJson.remove("date")
+            }
+            
             val filteredJson = expenseJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
             
             client.from("expenses").insert(filteredJson)
+            Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error adding expense: ${e.message}")
+            android.util.Log.e("EventRepository", "Failed to add expense: ${e.message}", e)
+            Result.failure(e)
         }
     }
 

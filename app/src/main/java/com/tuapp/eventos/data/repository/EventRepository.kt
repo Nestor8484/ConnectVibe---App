@@ -29,7 +29,7 @@ interface EventRepository {
     suspend fun updateEventStatus(eventId: String, status: String): Result<Unit>
     suspend fun assignMultipleRoles(assignments: List<EventRoleMember>): Result<Unit>
 
-    suspend fun addExpense(eventId: String, expense: Expense)
+    suspend fun addExpense(eventId: String, expense: Expense): Result<Unit>
     suspend fun getExpenses(eventId: String): List<Expense>
     fun getEventsByGroup(groupId: String): Flow<List<Event>>
 }

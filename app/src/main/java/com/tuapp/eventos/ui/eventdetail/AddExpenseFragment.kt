@@ -10,8 +10,10 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.fragment.app.activityViewModels
 import com.tuapp.eventos.databinding.FragmentAddExpenseBinding
+import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.ui.events.EventViewModel
+import io.github.jan.supabase.auth.auth
 import java.util.Date
 
 class AddExpenseFragment : Fragment() {
@@ -44,12 +46,14 @@ class AddExpenseFragment : Fragment() {
             
             if (amountStr.isNotBlank() && name.isNotBlank() && category.isNotBlank()) {
                 val amount = amountStr.toDoubleOrNull() ?: 0.0
+                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
                 
                 val expense = Expense(
                     eventId = eventId,
                     name = name,
                     amount = amount,
                     category = category,
+                    payerId = userId,
                     date = Date()
                 )
                 
