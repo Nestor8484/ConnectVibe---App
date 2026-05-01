@@ -272,8 +272,14 @@ class GroupRepository {
                 if (jsonArray is kotlinx.serialization.json.JsonArray) {
                     for (element in jsonArray) {
                         try {
-                            val notification = json.decodeFromJsonElement<Notification>(element)
-                            val groupElement = element.jsonObject["groups"]
+                            val jsonObj = element.jsonObject
+                            // Extraer ID manualmente para asegurar compatibilidad String/Int
+                            val id = jsonObj["id"]?.let { 
+                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() 
+                            }
+                            
+                            val notification = json.decodeFromJsonElement<Notification>(element).copy(id = id)
+                            val groupElement = jsonObj["groups"]
                             
                             if (groupElement != null) {
                                 val group = json.decodeFromJsonElement<Group>(groupElement)
@@ -296,26 +302,33 @@ class GroupRepository {
     suspend fun acceptInvitation(notification: Notification): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                // 1. Añadir al grupo
-                val member = GroupMember(
-                    group_id = notification.group_id,
-                    user_id = notification.receiver_id,
-                    status = "active",
-                    is_admin = false
-                )
-                client.from("group_members").insert(member)
+                Log.d("GroupRepository", "Aceptando invitación: Grupo=${notification.group_id}, Usuario=${notification.receiver_id}")
+                
+                // 1. Intentar añadir al grupo (si ya es miembro, ignoramos el error de inserción)
+                try {
+                    val member = GroupMember(
+                        group_id = notification.group_id,
+                        user_id = notification.receiver_id,
+                        status = "active",
+                        is_admin = false
+                    )
+                    client.from("group_members").insert(member)
+                    Log.d("GroupRepository", "Usuario añadido al grupo correctamente")
+                } catch (e: Exception) {
+                    Log.w("GroupRepository", "El usuario ya podría ser miembro: ${e.message}")
+                }
 
-                // 2. Eliminar la notificación
+                // 2. Eliminar la notificación SIEMPRE (aunque la inserción arriba fallara por ya ser miembro)
                 val notificationId = notification.id ?: throw Exception("ID de notificación no encontrado")
                 val deleteResult = deleteNotification(notificationId)
                 
                 if (deleteResult.isFailure) {
-                    throw deleteResult.exceptionOrNull() ?: Exception("Error al eliminar la notificación")
+                    return@withContext Result.failure(deleteResult.exceptionOrNull() ?: Exception("Error al borrar notificación tras aceptar"))
                 }
                 
                 Result.success(Unit)
             } catch (e: Exception) {
-                Log.e("GroupRepository", "Error en acceptInvitation: ${e.message}")
+                Log.e("GroupRepository", "Error fatal en acceptInvitation: ${e.message}")
                 Result.failure(e)
             }
         }
@@ -328,14 +341,27 @@ class GroupRepository {
     suspend fun deleteNotification(notificationId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                client.from("notifications").delete {
+                Log.d("GroupRepository", "Eliminando notificación ID: $notificationId")
+                if (notificationId.isBlank()) return@withContext Result.failure(Exception("ID de notificación vacío"))
+
+                val numericId = notificationId.toLongOrNull()
+                
+                // Realizamos el borrado y pedimos que nos devuelva lo borrado para confirmar
+                val response = client.from("notifications").delete {
                     filter {
-                        eq("id", notificationId)
+                        if (numericId != null) {
+                            eq("id", numericId)
+                        } else {
+                            eq("id", notificationId)
+                        }
                     }
+                    select() 
                 }
+                
+                Log.d("GroupRepository", "Resultado del borrado en Supabase: ${response.data}")
                 Result.success(Unit)
             } catch (e: Exception) {
-                Log.e("GroupRepository", "Error al eliminar notificación: ${e.message}")
+                Log.e("GroupRepository", "Excepción al borrar notificación: ${e.message}")
                 Result.failure(e)
             }
         }

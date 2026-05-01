@@ -27,19 +27,28 @@ class NotificationViewModel : ViewModel() {
     private val _hasPendingNotifications = MutableStateFlow(false)
     val hasPendingNotifications: StateFlow<Boolean> = _hasPendingNotifications.asStateFlow()
 
+    private var isRealtimeSetup = false
+
     fun loadNotifications(userId: String) {
         viewModelScope.launch {
             _notificationsState.value = NotificationsState.Loading
-            val result = repository.getNotifications(userId)
-            if (result.isSuccess) {
-                val notifications = result.getOrDefault(emptyList())
-                _notificationsState.value = NotificationsState.Success(notifications)
-                _hasPendingNotifications.value = notifications.any { it.first.status == "pending" }
-            } else {
-                _notificationsState.value = NotificationsState.Error(result.exceptionOrNull()?.message ?: "Error al cargar notificaciones")
-            }
+            refreshNotifications(userId)
         }
-        setupRealtime(userId)
+        if (!isRealtimeSetup) {
+            setupRealtime(userId)
+            isRealtimeSetup = true
+        }
+    }
+
+    private suspend fun refreshNotifications(userId: String) {
+        val result = repository.getNotifications(userId)
+        if (result.isSuccess) {
+            val notifications = result.getOrDefault(emptyList())
+            _notificationsState.value = NotificationsState.Success(notifications)
+            _hasPendingNotifications.value = notifications.any { it.first.status == "pending" }
+        } else {
+            _notificationsState.value = NotificationsState.Error(result.exceptionOrNull()?.message ?: "Error al cargar notificaciones")
+        }
     }
 
     private fun setupRealtime(userId: String) {
@@ -47,21 +56,16 @@ class NotificationViewModel : ViewModel() {
         channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "notifications"
         }.onEach { action ->
-            when (action) {
-                is PostgresAction.Insert, is PostgresAction.Update, is PostgresAction.Delete -> {
-                    val result = repository.getNotifications(userId)
-                    if (result.isSuccess) {
-                        val notifications = result.getOrDefault(emptyList())
-                        _notificationsState.value = NotificationsState.Success(notifications)
-                        _hasPendingNotifications.value = notifications.any { it.first.status == "pending" }
-                    }
-                }
-                else -> {}
-            }
+            android.util.Log.d("NotificationViewModel", "Realtime action detected: $action")
+            refreshNotifications(userId)
         }.launchIn(viewModelScope)
 
         viewModelScope.launch {
-            channel.subscribe()
+            try {
+                channel.subscribe()
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationViewModel", "Error subscribing to realtime: ${e.message}")
+            }
         }
     }
 
@@ -69,7 +73,8 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             val result = repository.acceptInvitation(notification)
             if (result.isSuccess) {
-                loadNotifications(userId)
+                // El refresco vendrá por Realtime o podemos forzarlo
+                refreshNotifications(userId)
             }
         }
     }
@@ -78,7 +83,7 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             val result = repository.declineInvitation(notificationId)
             if (result.isSuccess) {
-                loadNotifications(userId)
+                refreshNotifications(userId)
             }
         }
     }
@@ -87,7 +92,7 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             val result = repository.deleteNotification(notificationId)
             if (result.isSuccess) {
-                loadNotifications(userId)
+                refreshNotifications(userId)
             }
         }
     }
