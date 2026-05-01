@@ -41,30 +41,30 @@ class AddExpenseFragment : Fragment() {
 
         binding.btnAddExpense.setOnClickListener {
             val amountStr = binding.etAmount.text.toString()
-            val name = binding.etExpenseName.text.toString()
-            val category = binding.atvCategory.text.toString()
+            val title = binding.etExpenseName.text.toString()
+            val description = binding.atvCategory.text.toString()
             
-            if (amountStr.isNotBlank() && name.isNotBlank() && category.isNotBlank()) {
+            if (amountStr.isNotBlank() && title.isNotBlank()) {
                 val amount = amountStr.toDoubleOrNull() ?: 0.0
-                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: ""
                 
                 val expense = Expense(
                     eventId = eventId,
-                    name = name,
+                    createdBy = userId,
+                    title = title,
+                    description = description,
                     amount = amount,
-                    category = category,
-                    payerId = userId,
-                    date = Date()
+                    currency = "EUR",
+                    paidByUserId = userId,
+                    incurredAt = Date()
                 )
                 
-                android.util.Log.d("AddExpense", "Enviando gasto: $expense")
                 viewModel.addExpense(eventId, expense)
                 Toast.makeText(context, "Gasto guardado correctamente", Toast.LENGTH_SHORT).show()
                 findNavController().popBackStack()
             } else {
                 if (amountStr.isBlank()) binding.etAmount.error = "Importe requerido"
-                if (name.isBlank()) binding.etExpenseName.error = "Nombre requerido"
-                if (category.isBlank()) binding.atvCategory.error = "Categoría requerida"
+                if (title.isBlank()) binding.etExpenseName.error = "Nombre requerido"
             }
         }
     }

@@ -210,8 +210,6 @@ class EventRepositoryImpl : EventRepository {
                     }
                 }
             
-            android.util.Log.d("DEBUG_SQL", "Participantes RAW: ${response.data}")
-            
             val jsonElement = Json.parseToJsonElement(response.data)
             if (jsonElement !is kotlinx.serialization.json.JsonArray) {
                 return Result.success(emptyList())
@@ -398,9 +396,8 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun addExpense(eventId: String, expense: Expense): Result<Unit> {
         return try {
-            android.util.Log.d("EventRepository", "Preparing to save expense to DB: ${expense.name}")
+            android.util.Log.d("EventRepository", "Preparing to save expense: ${expense.title}")
             
-            // Usar una configuración de Json que no incluya nulos/defaults si no es necesario
             val jsonConfig = Json { 
                 encodeDefaults = false 
                 ignoreUnknownKeys = true
@@ -408,23 +405,18 @@ class EventRepositoryImpl : EventRepository {
             
             val expenseJson = jsonConfig.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
             
-            // Limpieza de campos automáticos para evitar errores de restricción
+            // Limpieza de campos que genera la BD automáticamente
             expenseJson.remove("id")
             expenseJson.remove("created_at")
-            expenseJson.remove("updated_at")
             
-            // Si la fecha es nula, dejamos que la base de datos use el valor por defecto
-            if (expense.date == null) {
-                expenseJson.remove("date")
+            // Si la fecha es nula, la BD usará CURRENT_DATE por defecto
+            if (expense.incurredAt == null) {
+                expenseJson.remove("incurred_at")
             }
             
             val finalJsonObject = JsonObject(expenseJson)
-            android.util.Log.d("EventRepository", "Final JSON for expense insert: $finalJsonObject")
-            
-            // Ejecutar la inserción
             client.from("expenses").insert(finalJsonObject)
             
-            android.util.Log.d("EventRepository", "Expense insert operation called successfully")
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Failed to add expense: ${e.message}", e)

@@ -14,24 +14,30 @@ data class Expense(
     
     @SerialName("event_id")
     val eventId: String,
+
+    @SerialName("created_by")
+    val createdBy: String,
     
-    @SerialName("name")
-    val name: String,
+    @SerialName("title")
+    val title: String,
+
+    @SerialName("description")
+    val description: String? = null,
     
     @SerialName("amount")
     val amount: Double,
+
+    @SerialName("currency")
+    val currency: String = "EUR",
     
-    @SerialName("category")
-    val category: String,
-    
-    @SerialName("payer_id")
+    @SerialName("paid_by_user_id")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val payerId: String? = null,
+    val paidByUserId: String? = null,
     
     @Serializable(with = TimestampSerializer::class)
-    @SerialName("date")
+    @SerialName("incurred_at")
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val date: java.util.Date? = null,
+    val incurredAt: java.util.Date? = null,
 
     @Serializable(with = TimestampSerializer::class)
     @SerialName("created_at")
