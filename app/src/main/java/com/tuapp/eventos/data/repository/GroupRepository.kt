@@ -62,7 +62,7 @@ class GroupRepository {
                         }
                     }
                 
-                Log.d("GroupRepository", "Response data: ${response.data}")
+                Log.d("GroupRepository", "Raw Response data: ${response.data}")
                 
                 val resultList = mutableListOf<Pair<GroupMember, Profile>>()
                 val jsonArray = json.parseToJsonElement(response.data)
@@ -70,32 +70,46 @@ class GroupRepository {
                 if (jsonArray is kotlinx.serialization.json.JsonArray) {
                     for (element in jsonArray) {
                         try {
+                            // Decodificar el miembro (debería ignorar la clave "profiles" por ignoreUnknownKeys)
                             val member = json.decodeFromJsonElement<GroupMember>(element)
                             val profileElement = element.jsonObject["profiles"]
-                            if (profileElement != null) {
-                                // Soporte tanto para objeto simple como para lista (a veces Supabase devuelve lista en joins)
-                                val profile = if (profileElement is kotlinx.serialization.json.JsonArray) {
-                                    if (profileElement.isNotEmpty()) {
-                                        json.decodeFromJsonElement<Profile>(profileElement[0])
-                                    } else null
-                                } else {
-                                    json.decodeFromJsonElement<Profile>(profileElement)
+                            
+                            if (profileElement != null && profileElement !is kotlinx.serialization.json.JsonNull) {
+                                // Soporte tanto para objeto simple como para lista
+                                val profile = try {
+                                    if (profileElement is kotlinx.serialization.json.JsonArray) {
+                                        if (profileElement.isNotEmpty()) {
+                                            json.decodeFromJsonElement<Profile>(profileElement[0])
+                                        } else null
+                                    } else {
+                                        json.decodeFromJsonElement<Profile>(profileElement)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("GroupRepository", "Error decoding profile for user ${member.user_id}: ${e.message}")
+                                    null
                                 }
                                 
-                                if (profile != null) {
-                                    resultList.add(member to profile)
-                                }
+                                // Si el perfil es nulo, creamos uno genérico para que el usuario al menos aparezca en la lista
+                                val finalProfile = profile ?: Profile(
+                                    id = member.user_id,
+                                    full_name = "Usuario desconocido",
+                                    username = "usuario_${member.user_id.take(5)}"
+                                )
+                                resultList.add(member to finalProfile)
+                            } else {
+                                Log.w("GroupRepository", "No profile found for user ${member.user_id} (RLS or missing data)")
+                                // Opcional: Podríamos añadir el miembro con un perfil genérico si no tiene perfil
                             }
                         } catch (e: Exception) {
-                            Log.e("GroupRepository", "Error decoding member/profile: ${e.message}")
-                            Log.e("GroupRepository", "Element was: $element")
+                            Log.e("GroupRepository", "Error decoding member entry: ${e.message}")
+                            Log.e("GroupRepository", "Problematic element: $element")
                         }
                     }
                 }
-                Log.d("GroupRepository", "Successfully loaded ${resultList.size} members")
+                Log.d("GroupRepository", "Successfully loaded ${resultList.size} members with profiles")
                 Result.success(resultList)
             } catch (e: Exception) {
-                Log.e("GroupRepository", "Error in getGroupMembers: ${e.message}")
+                Log.e("GroupRepository", "Fatal error in getGroupMembers: ${e.message}", e)
                 Result.failure(e)
             }
         }

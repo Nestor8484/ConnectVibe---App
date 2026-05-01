@@ -24,13 +24,31 @@ class MemberViewModel : ViewModel() {
     val inviteState: StateFlow<InviteState> = _inviteState.asStateFlow()
 
     fun loadMembers(groupId: String) {
+        if (groupId.isBlank()) {
+            android.util.Log.e("MemberViewModel", "Error: groupId is blank")
+            _membersState.value = MembersState.Error("ID de grupo no válido")
+            return
+        }
+
         viewModelScope.launch {
-            _membersState.value = MembersState.Loading
-            val result = repository.getGroupMembers(groupId)
-            if (result.isSuccess) {
-                _membersState.value = MembersState.Success(result.getOrDefault(emptyList()))
-            } else {
-                _membersState.value = MembersState.Error(result.exceptionOrNull()?.message ?: "Error al cargar miembros")
+            try {
+                _membersState.value = MembersState.Loading
+                android.util.Log.d("MemberViewModel", "Loading members for group: $groupId")
+                
+                val result = repository.getGroupMembers(groupId)
+                
+                if (result.isSuccess) {
+                    val members = result.getOrDefault(emptyList())
+                    android.util.Log.d("MemberViewModel", "Successfully loaded ${members.size} members")
+                    _membersState.value = MembersState.Success(members)
+                } else {
+                    val errorMsg = result.exceptionOrNull()?.message ?: "Error desconocido"
+                    android.util.Log.e("MemberViewModel", "Error loading members: $errorMsg")
+                    _membersState.value = MembersState.Error(errorMsg)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MemberViewModel", "Exception in loadMembers: ${e.message}")
+                _membersState.value = MembersState.Error(e.message ?: "Error inesperado")
             }
         }
     }

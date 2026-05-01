@@ -220,8 +220,12 @@ class GroupDetailFragment : Fragment() {
                     is MemberViewModel.MembersState.Success -> {
                         android.util.Log.d("GroupDetail", "Received ${state.members.size} members")
                         memberAdapter.submitList(state.members)
+                        if (state.members.isEmpty()) {
+                            android.widget.Toast.makeText(context, "No hay miembros en este grupo", android.widget.Toast.LENGTH_SHORT).show()
+                        }
                     }
                     is MemberViewModel.MembersState.Error -> {
+                        android.widget.Toast.makeText(context, state.message, android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
             }
