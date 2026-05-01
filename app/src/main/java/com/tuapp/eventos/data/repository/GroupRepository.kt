@@ -12,7 +12,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class GroupRepository {
     private val client = SupabaseModule.client
@@ -56,7 +60,6 @@ class GroupRepository {
             try {
                 Log.d("GroupRepository", "Fetching members for group: $groupId")
                 
-                // Consulta estándar con join a profiles
                 val response = client.from("group_members")
                     .select(Columns.raw("*, profiles(*)")) {
                         filter {
@@ -66,64 +69,57 @@ class GroupRepository {
                 
                 Log.d("GroupRepository", "Raw Response: ${response.data}")
                 
-                val resultList = mutableListOf<Pair<GroupMember, Profile>>()
-                val jsonArray = json.parseToJsonElement(response.data)
-                
-                if (jsonArray is kotlinx.serialization.json.JsonArray) {
-                    for (element in jsonArray) {
-                        try {
-                            val jsonObj = element.jsonObject
-                            
-                            // Extraer ID de usuario de forma segura
-                            val userId = jsonObj["user_id"]?.let { 
-                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() 
-                            } ?: continue
+                val jsonElement = json.parseToJsonElement(response.data)
+                if (jsonElement !is kotlinx.serialization.json.JsonArray) {
+                    return@withContext Result.success(emptyList())
+                }
 
-                            // Mapear Miembro
-                            val member = GroupMember(
-                                group_id = jsonObj["group_id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else groupId } ?: groupId,
-                                user_id = userId,
-                                is_admin = jsonObj["is_admin"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content.toBoolean() else false } ?: false,
-                                status = jsonObj["status"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else "active" } ?: "active"
-                            )
+                val resultList = jsonElement.mapNotNull { element ->
+                    try {
+                        val jsonObj = element.jsonObject
+                        
+                        // Extraer ID de usuario de forma segura (UUID sin comillas)
+                        val userId = jsonObj["user_id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
 
-                            // Mapear Perfil (Maneja objeto u objeto dentro de lista)
-                            val profileElement = jsonObj["profiles"]
-                            val profile = if (profileElement != null && profileElement !is kotlinx.serialization.json.JsonNull) {
-                                try {
-                                    val pObj = when (profileElement) {
-                                        is kotlinx.serialization.json.JsonArray -> if (profileElement.isNotEmpty()) profileElement[0].jsonObject else null
-                                        is kotlinx.serialization.json.JsonObject -> profileElement.jsonObject
-                                        else -> null
-                                    }
+                        // Mapear Miembro
+                        val member = GroupMember(
+                            group_id = jsonObj["group_id"]?.jsonPrimitive?.contentOrNull ?: groupId,
+                            user_id = userId,
+                            is_admin = jsonObj["is_admin"]?.jsonPrimitive?.booleanOrNull ?: false,
+                            status = jsonObj["status"]?.jsonPrimitive?.contentOrNull ?: "active"
+                        )
 
-                                    pObj?.let {
-                                        Profile(
-                                            id = userId,
-                                            full_name = it["full_name"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null },
-                                            username = it["username"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null },
-                                            avatar_url = it["avatar_url"]?.let { p -> if (p is kotlinx.serialization.json.JsonPrimitive) p.content else null }
-                                        )
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("GroupRepository", "Error parsing profile for $userId: ${e.message}")
-                                    null
-                                }
-                            } else null
+                        // Mapear Perfil manejando polimorfismo (Objeto o Array)
+                        val profilesElement = jsonObj["profiles"]
+                        val profileObj = when (profilesElement) {
+                            is kotlinx.serialization.json.JsonObject -> profilesElement
+                            is kotlinx.serialization.json.JsonArray -> if (profilesElement.isNotEmpty()) profilesElement[0].jsonObject else null
+                            else -> null
+                        }
 
-                            // Fallback si no hay perfil (para que no desaparezca de la lista)
-                            val finalProfile = profile ?: Profile(
+                        val profile = if (profileObj != null) {
+                            Profile(
                                 id = userId,
-                                full_name = "Usuario desconocido",
+                                full_name = profileObj["full_name"]?.jsonPrimitive?.contentOrNull,
+                                username = profileObj["username"]?.jsonPrimitive?.contentOrNull,
+                                avatar_url = profileObj["avatar_url"]?.jsonPrimitive?.contentOrNull
+                            )
+                        } else {
+                            // Fallback si la política de RLS oculta el perfil
+                            Profile(
+                                id = userId,
+                                full_name = "Usuario (Sin acceso)",
                                 username = "usuario_${userId.take(5)}"
                             )
-                            
-                            resultList.add(member to finalProfile)
-                        } catch (e: Exception) {
-                            Log.e("GroupRepository", "Error processing member row: ${e.message}")
                         }
+                        
+                        member to profile
+                    } catch (e: Exception) {
+                        Log.e("GroupRepository", "Error processing member row: ${e.message}")
+                        null
                     }
                 }
+
                 Result.success(resultList)
             } catch (e: Exception) {
                 Log.e("GroupRepository", "Fatal error loading members: ${e.message}")

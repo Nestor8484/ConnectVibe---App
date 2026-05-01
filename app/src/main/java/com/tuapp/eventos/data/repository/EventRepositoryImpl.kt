@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -209,23 +210,38 @@ class EventRepositoryImpl : EventRepository {
                     }
                 }
             
-            val jsonArray = Json.parseToJsonElement(response.data).jsonArray
+            val jsonElement = Json.parseToJsonElement(response.data)
+            if (jsonElement !is kotlinx.serialization.json.JsonArray) {
+                return Result.success(emptyList())
+            }
             
-            val participants = jsonArray.map { element ->
-                val obj = element.jsonObject
-                val userId = obj["user_id"]?.jsonPrimitive?.content ?: ""
-                val isAdmin = obj["is_admin"]?.jsonPrimitive?.boolean ?: false
-                
-                val profileObj = obj["profiles"]?.jsonObject
-                val fullName = profileObj?.get("full_name")?.jsonPrimitive?.content ?: "Usuario"
-                val username = profileObj?.get("username")?.jsonPrimitive?.content ?: "usuario"
-                
-                GroupMember(
-                    userId = userId,
-                    userName = fullName,
-                    role = if (isAdmin) MemberRole.ADMIN else MemberRole.MEMBER,
-                    email = "@$username"
-                )
+            val participants = jsonElement.mapNotNull { element ->
+                try {
+                    val obj = element.jsonObject
+                    val userId = obj["user_id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    val isAdmin = obj["is_admin"]?.jsonPrimitive?.booleanOrNull ?: false
+                    
+                    // Manejar que profiles pueda venir como objeto o como lista (Join 1:1 vs 1:N)
+                    val profilesElement = obj["profiles"]
+                    val profileObj = when (profilesElement) {
+                        is kotlinx.serialization.json.JsonObject -> profilesElement
+                        is kotlinx.serialization.json.JsonArray -> if (profilesElement.isNotEmpty()) profilesElement[0].jsonObject else null
+                        else -> null
+                    }
+                    
+                    val fullName = profileObj?.get("full_name")?.jsonPrimitive?.contentOrNull ?: "Usuario"
+                    val username = profileObj?.get("username")?.jsonPrimitive?.contentOrNull ?: "usuario"
+                    
+                    GroupMember(
+                        userId = userId,
+                        userName = fullName,
+                        role = if (isAdmin) MemberRole.ADMIN else MemberRole.MEMBER,
+                        email = "@$username"
+                    )
+                } catch (e: Exception) {
+                    android.util.Log.e("EventRepository", "Error parsing participant row: ${e.message}")
+                    null
+                }
             }
             
             Result.success(participants)
