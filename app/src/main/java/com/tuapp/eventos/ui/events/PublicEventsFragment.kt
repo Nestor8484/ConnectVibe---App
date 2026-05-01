@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventListBinding
 import com.tuapp.eventos.di.SupabaseModule
+import com.tuapp.eventos.ui.profile.NotificationViewModel
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ class PublicEventsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: EventViewModel by viewModels()
+    private val notificationViewModel: NotificationViewModel by viewModels()
 
     private val eventAdapter = EventAdapter { event ->
         val bundle = Bundle().apply {
@@ -58,6 +60,10 @@ class PublicEventsFragment : Fragment() {
         binding.ivUserProfile.setOnClickListener {
             findNavController().navigate(R.id.profileFragment)
         }
+
+        if (userId != null) {
+            notificationViewModel.loadNotifications(userId)
+        }
     }
 
     private fun setupToolbar() {
@@ -84,6 +90,12 @@ class PublicEventsFragment : Fragment() {
                         Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                     }
                 }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            notificationViewModel.hasPendingNotifications.collectLatest { hasPending ->
+                binding.vNotificationBadge.visibility = if (hasPending) View.VISIBLE else View.GONE
             }
         }
     }

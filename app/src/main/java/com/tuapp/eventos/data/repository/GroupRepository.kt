@@ -1,5 +1,6 @@
 package com.tuapp.eventos.data.repository
 
+import android.util.Log
 import com.tuapp.eventos.data.model.Group
 import com.tuapp.eventos.data.model.GroupMember
 import com.tuapp.eventos.data.model.Notification
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.jsonObject
 
 class GroupRepository {
     private val client = SupabaseModule.client
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun createGroup(name: String, description: String?, icon: String, color: String, userId: String): Result<String> {
         return withContext(Dispatchers.IO) {
@@ -49,23 +51,51 @@ class GroupRepository {
         }
     }
 
-    suspend fun updateGroup(groupId: String, name: String, description: String?, icon: String, color: String): Result<Unit> {
+    suspend fun getGroupMembers(groupId: String): Result<List<Pair<GroupMember, Profile>>> {
         return withContext(Dispatchers.IO) {
             try {
-                client.from("groups").update(
-                    {
-                        set("name", name)
-                        set("description", description)
-                        set("icon", icon)
-                        set("color", color)
+                Log.d("GroupRepository", "Fetching members for group: $groupId")
+                val response = client.from("group_members")
+                    .select(Columns.raw("*, profiles(*)")) {
+                        filter {
+                            eq("group_id", groupId)
+                        }
                     }
-                ) {
-                    filter {
-                        eq("id", groupId)
+                
+                Log.d("GroupRepository", "Response data: ${response.data}")
+                
+                val resultList = mutableListOf<Pair<GroupMember, Profile>>()
+                val jsonArray = json.parseToJsonElement(response.data)
+                
+                if (jsonArray is kotlinx.serialization.json.JsonArray) {
+                    for (element in jsonArray) {
+                        try {
+                            val member = json.decodeFromJsonElement<GroupMember>(element)
+                            val profileElement = element.jsonObject["profiles"]
+                            if (profileElement != null) {
+                                // Soporte tanto para objeto simple como para lista (a veces Supabase devuelve lista en joins)
+                                val profile = if (profileElement is kotlinx.serialization.json.JsonArray) {
+                                    if (profileElement.isNotEmpty()) {
+                                        json.decodeFromJsonElement<Profile>(profileElement[0])
+                                    } else null
+                                } else {
+                                    json.decodeFromJsonElement<Profile>(profileElement)
+                                }
+                                
+                                if (profile != null) {
+                                    resultList.add(member to profile)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("GroupRepository", "Error decoding member/profile: ${e.message}")
+                            Log.e("GroupRepository", "Element was: $element")
+                        }
                     }
                 }
-                Result.success(Unit)
+                Log.d("GroupRepository", "Successfully loaded ${resultList.size} members")
+                Result.success(resultList)
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error in getGroupMembers: ${e.message}")
                 Result.failure(e)
             }
         }
@@ -79,28 +109,11 @@ class GroupRepository {
                         filter {
                             eq("group_id", groupId)
                             eq("user_id", userId)
-                            eq("is_admin", true)
                         }
                     }.decodeSingleOrNull<GroupMember>()
-                member != null
+                member?.is_admin ?: false
             } catch (e: Exception) {
                 false
-            }
-        }
-    }
-
-    suspend fun getGroupsForUser(userId: String): Result<List<Group>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val groups = client.from("groups")
-                    .select(Columns.raw("*, group_members!inner(user_id)")) {
-                        filter {
-                            eq("group_members.user_id", userId)
-                        }
-                    }.decodeList<Group>()
-                Result.success(groups)
-            } catch (e: Exception) {
-                Result.failure(e)
             }
         }
     }
@@ -108,12 +121,11 @@ class GroupRepository {
     suspend fun getGroupById(groupId: String): Result<Group> {
         return withContext(Dispatchers.IO) {
             try {
-                val group = client.from("groups")
-                    .select {
-                        filter {
-                            eq("id", groupId)
-                        }
-                    }.decodeSingle<Group>()
+                val group = client.from("groups").select {
+                    filter {
+                        eq("id", groupId)
+                    }
+                }.decodeSingle<Group>()
                 Result.success(group)
             } catch (e: Exception) {
                 Result.failure(e)
@@ -121,45 +133,35 @@ class GroupRepository {
         }
     }
 
-    suspend fun getGroupMembers(groupId: String): Result<List<Pair<GroupMember, Profile>>> {
+    suspend fun getGroupsForUser(userId: String): Result<List<Group>> {
         return withContext(Dispatchers.IO) {
             try {
-                // Fetch members
-                val members = client.from("group_members")
-                    .select {
+                val response = client.from("group_members")
+                    .select(Columns.raw("groups(*)")) {
                         filter {
-                            eq("group_id", groupId)
+                            eq("user_id", userId)
+                            eq("status", "active")
                         }
-                    }.decodeList<GroupMember>()
+                    }
                 
-                if (members.isEmpty()) {
-                    return@withContext Result.success(emptyList())
-                }
-
-                // Fetch profiles for those members manually since there is no direct FK to profiles in group_members
-                val userIds = members.map { it.user_id }
-                val profiles = client.from("profiles")
-                    .select {
-                        filter {
-                            isIn("id", userIds)
+                val resultList = mutableListOf<Group>()
+                val jsonArray = json.parseToJsonElement(response.data)
+                
+                if (jsonArray is kotlinx.serialization.json.JsonArray) {
+                    for (element in jsonArray) {
+                        try {
+                            val groupElement = element.jsonObject["groups"]
+                            if (groupElement != null) {
+                                val group = json.decodeFromJsonElement<Group>(groupElement)
+                                resultList.add(group)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("GroupRepository", "Error decoding group: ${e.message}")
                         }
-                    }.decodeList<Profile>()
-                
-                val profilesMap = profiles.associateBy { it.id }
-                
-                val resultList = members.mapNotNull { member ->
-                    val profile = profilesMap[member.user_id]
-                    if (profile != null) {
-                        member to profile
-                    } else {
-                        // Create a fallback profile if not found
-                        member to Profile(id = member.user_id, username = "Usuario")
                     }
                 }
-                
                 Result.success(resultList)
             } catch (e: Exception) {
-                android.util.Log.e("GroupRepository", "Error fetching members: ${e.message}")
                 Result.failure(e)
             }
         }
@@ -168,7 +170,7 @@ class GroupRepository {
     suspend fun searchUsers(query: String): Result<List<Profile>> {
         return withContext(Dispatchers.IO) {
             try {
-                val profiles = client.from("profiles")
+                val result = client.from("profiles")
                     .select {
                         filter {
                             or {
@@ -177,14 +179,34 @@ class GroupRepository {
                             }
                         }
                     }.decodeList<Profile>()
-                Result.success(profiles)
+                Result.success(result)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
 
-    suspend fun sendGroupInvitation(groupId: String, receiverId: String, senderId: String): Result<Unit> {
+    suspend fun updateGroup(groupId: String, name: String, description: String?, icon: String, color: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                client.from("groups").update({
+                    set("name", name)
+                    set("description", description)
+                    set("icon", icon)
+                    set("color", color)
+                }) {
+                    filter {
+                        eq("id", groupId)
+                    }
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun inviteUserToGroup(groupId: String, receiverId: String, senderId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 // Primero verificamos si ya es miembro
@@ -197,7 +219,7 @@ class GroupRepository {
                     }.decodeSingleOrNull<GroupMember>() != null
 
                 if (isMember) {
-                    return@withContext Result.failure(Exception("El usuario ya es miembro del grupo"))
+                    return@withContext Result.failure(Exception("El usuario ya es miembro de este grupo"))
                 }
 
                 // Enviamos notificación
@@ -205,11 +227,14 @@ class GroupRepository {
                     receiver_id = receiverId,
                     sender_id = senderId,
                     group_id = groupId,
-                    message = "Te han invitado a unirte a un grupo"
+                    type = "group_invitation",
+                    message = "Invitación a grupo",
+                    status = "pending"
                 )
                 client.from("notifications").insert(notification)
                 Result.success(Unit)
             } catch (e: Exception) {
+                android.util.Log.e("GroupRepository", "Error al enviar invitación: ${e.message}")
                 Result.failure(e)
             }
         }
@@ -218,6 +243,7 @@ class GroupRepository {
     suspend fun getNotifications(userId: String): Result<List<Pair<Notification, Group>>> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d("GroupRepository", "Fetching notifications for user: $userId")
                 val response = client.from("notifications")
                     .select(Columns.raw("*, groups(*)")) {
                         filter {
@@ -227,21 +253,27 @@ class GroupRepository {
                     }
                 
                 val resultList = mutableListOf<Pair<Notification, Group>>()
-                val jsonArray = response.data.let { Json.parseToJsonElement(it) }
+                val jsonArray = json.parseToJsonElement(response.data)
                 
                 if (jsonArray is kotlinx.serialization.json.JsonArray) {
                     for (element in jsonArray) {
                         try {
-                            val notification = Json.decodeFromJsonElement<Notification>(element)
-                            val group = Json.decodeFromJsonElement<Group>(element.jsonObject["groups"]!!)
-                            resultList.add(notification to group)
+                            val notification = json.decodeFromJsonElement<Notification>(element)
+                            val groupElement = element.jsonObject["groups"]
+                            
+                            if (groupElement != null) {
+                                val group = json.decodeFromJsonElement<Group>(groupElement)
+                                resultList.add(notification to group)
+                            }
                         } catch (e: Exception) {
-                            android.util.Log.e("GroupRepository", "Error decoding notification: ${e.message}")
+                            Log.e("GroupRepository", "Error decoding notification: ${e.message}")
                         }
                     }
                 }
+                Log.d("GroupRepository", "Found ${resultList.size} notifications")
                 Result.success(resultList)
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error al obtener notificaciones: ${e.message}")
                 Result.failure(e)
             }
         }
@@ -259,33 +291,37 @@ class GroupRepository {
                 )
                 client.from("group_members").insert(member)
 
-                // 2. Marcar notificación como aceptada
-                client.from("notifications").update({
-                    set("status", "accepted")
-                }) {
-                    filter {
-                        eq("id", notification.id ?: "")
-                    }
+                // 2. Eliminar la notificación
+                val notificationId = notification.id ?: throw Exception("ID de notificación no encontrado")
+                val deleteResult = deleteNotification(notificationId)
+                
+                if (deleteResult.isFailure) {
+                    throw deleteResult.exceptionOrNull() ?: Exception("Error al eliminar la notificación")
                 }
+                
                 Result.success(Unit)
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error en acceptInvitation: ${e.message}")
                 Result.failure(e)
             }
         }
     }
 
     suspend fun declineInvitation(notificationId: String): Result<Unit> {
+        return deleteNotification(notificationId)
+    }
+
+    suspend fun deleteNotification(notificationId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                client.from("notifications").update({
-                    set("status", "declined")
-                }) {
+                client.from("notifications").delete {
                     filter {
                         eq("id", notificationId)
                     }
                 }
                 Result.success(Unit)
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error al eliminar notificación: ${e.message}")
                 Result.failure(e)
             }
         }

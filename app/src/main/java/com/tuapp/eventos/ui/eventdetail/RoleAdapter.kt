@@ -113,7 +113,7 @@ class RoleAdapter(
             binding.btnDeleteRole.setOnClickListener { onDeleteClick(role) }
 
             binding.root.setOnClickListener { 
-                if (isEditable) onRoleClick(role) 
+                onRoleClick(role)
             }
         }
 

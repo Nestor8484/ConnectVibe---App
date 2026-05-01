@@ -53,6 +53,9 @@ class NotificationsFragment : Fragment() {
             },
             onDecline = { notification ->
                 viewModel.declineInvitation(notification.id ?: "", userId)
+            },
+            onDelete = { notification ->
+                viewModel.deleteNotification(notification.id ?: "", userId)
             }
         )
         binding.rvNotifications.apply {

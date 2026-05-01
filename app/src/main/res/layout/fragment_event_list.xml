@@ -35,20 +35,36 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:text="Grupos" />
 
-            <ImageView
-                android:id="@+id/ivUserProfile"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+            <FrameLayout
+                android:id="@+id/layoutProfile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:padding="8dp"
-                android:src="@drawable/ic_profile"
                 app:layout_constraintBottom_toBottomOf="@id/tvScreenTitle"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tvScreenTitle"
-                app:tint="@color/md_theme_onSurface" />
+                app:layout_constraintTop_toTopOf="@id/tvScreenTitle">
+
+                <ImageView
+                    android:id="@+id/ivUserProfile"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_profile"
+                    app:tint="@color/md_theme_onSurface" />
+
+                <View
+                    android:id="@+id/vNotificationBadge"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_notification_dot"
+                    android:visibility="gone" />
+            </FrameLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

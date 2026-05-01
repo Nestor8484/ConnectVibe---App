@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventListBinding
 import com.tuapp.eventos.di.SupabaseModule
+import com.tuapp.eventos.ui.profile.NotificationViewModel
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ class PrivateEventsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: GroupViewModel by viewModels()
+    private val notificationViewModel: NotificationViewModel by viewModels()
 
     private val groupAdapter = GroupAdapter(
         onGroupClick = { group ->
@@ -52,6 +54,7 @@ class PrivateEventsFragment : Fragment() {
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
         if (userId != null) {
             viewModel.loadGroups(userId)
+            notificationViewModel.loadNotifications(userId)
         }
 
         binding.fabAddEvent.setOnClickListener {
@@ -87,6 +90,12 @@ class PrivateEventsFragment : Fragment() {
                         Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                     }
                 }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            notificationViewModel.hasPendingNotifications.collectLatest { hasPending ->
+                binding.vNotificationBadge.visibility = if (hasPending) View.VISIBLE else View.GONE
             }
         }
     }

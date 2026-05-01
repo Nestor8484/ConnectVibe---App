@@ -56,6 +56,20 @@ class ProfileFragment : Fragment() {
         
         observeProfile()
         observeLogout()
+        observeNotifications()
+    }
+
+    private fun observeNotifications() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.pendingNotificationsCount.collectLatest { count ->
+                if (count > 0) {
+                    binding.tvNotificationBadge.visibility = View.VISIBLE
+                    binding.tvNotificationBadge.text = count.toString()
+                } else {
+                    binding.tvNotificationBadge.visibility = View.GONE
+                }
+            }
+        }
     }
 
     private fun setupDarkModeToggle() {

@@ -11,7 +11,8 @@ import com.tuapp.eventos.databinding.ItemNotificationBinding
 
 class NotificationAdapter(
     private val onAccept: (Notification) -> Unit,
-    private val onDecline: (Notification) -> Unit
+    private val onDecline: (Notification) -> Unit,
+    private val onDelete: (Notification) -> Unit
 ) : ListAdapter<Pair<Notification, Group>, NotificationAdapter.NotificationViewHolder>(NotificationDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationViewHolder {
@@ -20,11 +21,16 @@ class NotificationAdapter(
     }
 
     override fun onBindViewHolder(holder: NotificationViewHolder, position: Int) {
-        holder.bind(getItem(position), onAccept, onDecline)
+        holder.bind(getItem(position), onAccept, onDecline, onDelete)
     }
 
     class NotificationViewHolder(private val binding: ItemNotificationBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(data: Pair<Notification, Group>, onAccept: (Notification) -> Unit, onDecline: (Notification) -> Unit) {
+        fun bind(
+            data: Pair<Notification, Group>,
+            onAccept: (Notification) -> Unit,
+            onDecline: (Notification) -> Unit,
+            onDelete: (Notification) -> Unit
+        ) {
             val notification = data.first
             val group = data.second
 
@@ -32,6 +38,7 @@ class NotificationAdapter(
             
             binding.btnAccept.setOnClickListener { onAccept(notification) }
             binding.btnDecline.setOnClickListener { onDecline(notification) }
+            binding.btnDelete.setOnClickListener { onDelete(notification) }
         }
     }
 

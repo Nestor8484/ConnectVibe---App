@@ -54,7 +54,7 @@ class MemberViewModel : ViewModel() {
     fun inviteUser(groupId: String, receiverId: String, senderId: String) {
         viewModelScope.launch {
             _inviteState.value = InviteState.Loading
-            val result = repository.sendGroupInvitation(groupId, receiverId, senderId)
+            val result = repository.inviteUserToGroup(groupId, receiverId, senderId)
             if (result.isSuccess) {
                 _inviteState.value = InviteState.Success
             } else {

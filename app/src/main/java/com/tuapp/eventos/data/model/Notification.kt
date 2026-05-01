@@ -1,9 +1,13 @@
 package com.tuapp.eventos.data.model
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Notification(
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val id: String? = null,
     val receiver_id: String,
     val sender_id: String,
@@ -11,5 +15,7 @@ data class Notification(
     val type: String = "group_invitation",
     val message: String? = null,
     val status: String = "pending",
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
     val created_at: String? = null
 )

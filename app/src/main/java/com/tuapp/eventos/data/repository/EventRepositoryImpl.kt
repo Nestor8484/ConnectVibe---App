@@ -97,6 +97,7 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun joinEvent(eventId: String, userId: String): Result<Unit> {
         return try {
+            android.util.Log.d("EventRepository", "Attempting to join event $eventId for user $userId")
             // First check if already member to avoid duplicate key error
             val existing = client.from("event_members")
                 .select {
@@ -107,6 +108,7 @@ class EventRepositoryImpl : EventRepository {
                 }.decodeSingleOrNull<EventMember>()
 
             if (existing != null) {
+                android.util.Log.d("EventRepository", "User already joined event")
                 return Result.success(Unit)
             }
 
@@ -114,12 +116,13 @@ class EventRepositoryImpl : EventRepository {
                 eventId = eventId,
                 userId = userId,
                 isAdmin = false,
-                status = "joined"
+                status = "active"
             )
             client.from("event_members").insert(member)
+            android.util.Log.d("EventRepository", "Successfully joined event")
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error joining event: ${e.message}")
+            android.util.Log.e("EventRepository", "Error joining event: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -257,6 +260,12 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun assignRoleToUser(roleId: String, userId: String, eventId: String): Result<Unit> {
         return try {
+            // Check if user is participating in the event first
+            val isParticipating = isUserParticipating(eventId, userId).getOrDefault(false)
+            if (!isParticipating) {
+                return Result.failure(Exception("Debes unirte al evento antes de asignarte un rol"))
+            }
+
             val roleMember = EventRoleMember(
                 roleId = roleId,
                 userId = userId,
