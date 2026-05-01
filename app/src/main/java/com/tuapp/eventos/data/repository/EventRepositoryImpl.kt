@@ -70,7 +70,12 @@ class EventRepositoryImpl : EventRepository {
             val eventId = insertedEvent.id ?: throw Exception("Failed to get event ID")
 
             if (roles.isNotEmpty()) {
-                val rolesToInsert = roles.map { it.copy(eventId = eventId) }
+                val rolesToInsert = roles.map { role ->
+                    val roleJson = Json.encodeToJsonElement(Role.serializer(), role.copy(eventId = eventId)).jsonObject.toMutableMap()
+                    roleJson.remove("id")
+                    roleJson.remove("created_at")
+                    roleJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
+                }
                 client.from("event_roles").insert(rolesToInsert)
             }
 
@@ -246,9 +251,16 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun createRole(role: Role): Result<Unit> {
         return try {
-            client.from("event_roles").insert(role)
+            val roleJson = Json.encodeToJsonElement(Role.serializer(), role).jsonObject.toMutableMap()
+            roleJson.remove("id")
+            roleJson.remove("created_at")
+            
+            val filteredJson = roleJson.filterValues { it !is kotlinx.serialization.json.JsonNull }
+            
+            client.from("event_roles").insert(filteredJson)
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error creating role: ${e.message}")
             Result.failure(e)
         }
     }
@@ -397,6 +409,21 @@ class EventRepositoryImpl : EventRepository {
                 .decodeList<Expense>()
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error fetching expenses: ${e.message}")
+            emptyList()
+        }
+    }
+
+    override suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask> {
+        return try {
+            client.from("event_tasks")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                    }
+                }
+                .decodeList<com.tuapp.eventos.domain.model.EventTask>()
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error fetching tasks: ${e.message}")
             emptyList()
         }
     }

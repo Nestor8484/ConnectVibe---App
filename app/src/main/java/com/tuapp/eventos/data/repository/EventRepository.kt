@@ -31,5 +31,6 @@ interface EventRepository {
 
     suspend fun addExpense(eventId: String, expense: Expense): Result<Unit>
     suspend fun getExpenses(eventId: String): List<Expense>
+    suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask>
     fun getEventsByGroup(groupId: String): Flow<List<Event>>
 }

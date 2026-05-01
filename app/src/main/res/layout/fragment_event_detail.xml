@@ -322,9 +322,10 @@
                                         android:textSize="12sp"
                                         android:textColor="?attr/colorOnSecondaryContainer"/>
                                     <TextView
+                                        android:id="@+id/tvTotalExpense"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:text="275.50€"
+                                        android:text="0.00€"
                                         android:textSize="20sp"
                                         android:textStyle="bold"
                                         android:textColor="?attr/colorOnSecondaryContainer"/>
@@ -341,9 +342,10 @@
                                         android:textSize="12sp"
                                         android:textColor="?attr/colorOnSecondaryContainer"/>
                                     <TextView
+                                        android:id="@+id/tvRolesCovered"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:text="3 de 5"
+                                        android:text="0 de 0"
                                         android:textSize="20sp"
                                         android:textStyle="bold"
                                         android:textColor="?attr/colorOnSecondaryContainer"/>
@@ -433,19 +435,21 @@
                             android:layout_marginBottom="12dp"/>
 
                         <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/taskProgressBar"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:progress="65"
+                            android:progress="0"
                             app:trackColor="#E3F2FD"
                             app:indicatorColor="#1565C0"
                             app:trackThickness="12dp"
                             app:trackCornerRadius="6dp" />
 
                         <TextView
+                            android:id="@+id/tvTaskProgress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="65% de las tareas del evento completadas"
+                            android:text="0% de las tareas del evento completadas" />
                             android:textAlignment="center"
                             android:textSize="12sp"
                             android:textColor="@color/md_theme_onSurfaceVariant"/>

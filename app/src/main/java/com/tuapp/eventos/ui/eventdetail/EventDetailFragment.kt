@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -24,6 +25,7 @@ import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentEventDetailBinding
 import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Event
+import com.tuapp.eventos.domain.model.EventRoleMember
 import com.tuapp.eventos.domain.model.Expense
 import com.tuapp.eventos.domain.model.Role
 import com.tuapp.eventos.domain.model.MemberRole
@@ -444,6 +446,117 @@ class EventDetailFragment : Fragment() {
                 }
             }
         }
+
+        // Observar gastos para el Dashboard
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.expenses.collectLatest { expenses ->
+                updateDashboardExpenses(expenses)
+                expenseAdapter.submitList(expenses)
+            }
+        }
+
+        // Observar roles y miembros para el Dashboard
+        viewLifecycleOwner.lifecycleScope.launch {
+            kotlinx.coroutines.flow.combine(viewModel.roles, viewModel.roleMembers) { roles, members ->
+                roles to members
+            }.collectLatest { (roles, members) ->
+                updateDashboardRoles(roles, members)
+            }
+        }
+
+        // Observar tareas para el Dashboard
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.tasks.collectLatest { tasks ->
+                updateTaskProgress(tasks)
+            }
+        }
+    }
+
+    private fun updateTaskProgress(tasks: List<com.tuapp.eventos.domain.model.EventTask>) {
+        if (tasks.isEmpty()) {
+            binding.taskProgressBar.progress = 0
+            binding.tvTaskProgress.text = "No hay tareas asignadas"
+            return
+        }
+
+        val completedTasks = tasks.count { it.isCompleted }
+        val progress = (completedTasks.toFloat() / tasks.size * 100).toInt()
+
+        binding.taskProgressBar.progress = progress
+        binding.tvTaskProgress.text = "$progress% de las tareas del evento completadas ($completedTasks/${tasks.size})"
+    }
+
+    private fun updateDashboardExpenses(expenses: List<Expense>) {
+        val total = expenses.sumOf { it.amount }
+        binding.tvTotalExpense.text = String.format(Locale.getDefault(), "%.2f€", total)
+
+        if (expenses.isEmpty()) {
+            binding.viewPieChart.setData(emptyList())
+            // Opcional: ocultar o mostrar mensaje de "Sin gastos"
+            return
+        }
+
+        // Agrupar por categoría
+        val byCategory = expenses.groupBy { it.category }
+        val chartData = mutableListOf<Pair<Float, Int>>()
+        
+        // Colores predefinidos para las categorías
+        val colors = listOf(
+            0xFF1565C0.toInt(), // Azul Oscuro
+            0xFF1E88E5.toInt(), // Azul Medio
+            0xFF42A5F5.toInt(), // Azul Claro
+            0xFF90CAF9.toInt(), // Azul Muy Claro
+            0xFFBBDEFB.toInt(), // Azul Pálido
+            0xFFE3F2FD.toInt()  // Azul Blanquecino
+        )
+
+        var colorIndex = 0
+        byCategory.forEach { (category, list) ->
+            val catTotal = list.sumOf { it.amount }
+            val percentage = (catTotal / total * 100).toFloat()
+            chartData.add(Pair(percentage, colors[colorIndex % colors.size]))
+            colorIndex++
+        }
+
+        binding.viewPieChart.setData(chartData)
+        
+        // Actualizar barras (simple visual hack para el ejemplo, o podrías implementar un BarChart real)
+        updateBarChart(byCategory, total)
+    }
+
+    private fun updateBarChart(byCategory: Map<String, List<Expense>>, total: Double) {
+        val barContainer = binding.viewBarChart
+        barContainer.removeAllViews()
+        
+        val colors = listOf(0xFF1565C0.toInt(), 0xFF1E88E5.toInt(), 0xFF42A5F5.toInt(), 0xFF90CAF9.toInt())
+        var colorIndex = 0
+        
+        val sortedCategories = byCategory.entries.sortedByDescending { it.value.sumOf { e -> e.amount } }
+        
+        for (entry in sortedCategories) {
+            val catTotal = entry.value.sumOf { it.amount }
+            val weight = (catTotal / total).toFloat()
+            
+            val bar = View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, (200 * weight * resources.displayMetrics.density).toInt(), 1f).apply {
+                    setMargins(8, 0, 8, 0)
+                }
+                setBackgroundColor(colors[colorIndex % colors.size])
+            }
+            barContainer.addView(bar)
+            colorIndex++
+        }
+    }
+
+    private fun updateDashboardRoles(roles: List<Role>, members: List<EventRoleMember>) {
+        val totalRoles = roles.size
+        val rolesCovered = roles.count { role ->
+            val minNeeded = role.minPeople ?: if (role.isMandatory) 1 else 0
+            val currentCount = members.count { it.roleId == role.id }
+            currentCount >= minNeeded
+        }
+        
+        binding.tvRolesCovered.text = "$rolesCovered de $totalRoles"
     }
 
     private fun setupTabs() {
@@ -631,7 +744,14 @@ class EventDetailFragment : Fragment() {
     }
 
     private fun loadData() {
-        // Data is now loaded from ViewModel via observeViewModel
+        currentEventId?.let { id ->
+            viewModel.loadEvent(id)
+            viewModel.loadParticipants(id)
+            viewModel.loadRoles(id)
+            viewModel.loadRoleMembers(id)
+            viewModel.loadExpenses(id)
+            viewModel.loadTasks(id)
+        }
     }
 
     override fun onDestroyView() {

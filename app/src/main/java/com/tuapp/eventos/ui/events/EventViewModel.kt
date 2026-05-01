@@ -45,6 +45,9 @@ class EventViewModel : ViewModel() {
     private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
     val expenses: StateFlow<List<Expense>> = _expenses.asStateFlow()
 
+    private val _tasks = MutableStateFlow<List<com.tuapp.eventos.domain.model.EventTask>>(emptyList())
+    val tasks: StateFlow<List<com.tuapp.eventos.domain.model.EventTask>> = _tasks.asStateFlow()
+
     fun loadPublicEvents(currentUserId: String?) {
         viewModelScope.launch {
             _eventsState.value = EventsState.Loading
@@ -111,7 +114,7 @@ class EventViewModel : ViewModel() {
         }
     }
 
-    private fun loadRoleMembers(eventId: String) {
+    fun loadRoleMembers(eventId: String) {
         viewModelScope.launch {
             val result = repository.getRoleMembers(eventId)
             if (result.isSuccess) {
@@ -124,6 +127,13 @@ class EventViewModel : ViewModel() {
         viewModelScope.launch {
             val result = repository.getExpenses(eventId)
             _expenses.value = result
+        }
+    }
+
+    fun loadTasks(eventId: String) {
+        viewModelScope.launch {
+            val result = repository.getTasks(eventId)
+            _tasks.value = result
         }
     }
 

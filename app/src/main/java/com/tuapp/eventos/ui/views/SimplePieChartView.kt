@@ -14,17 +14,18 @@ class SimplePieChartView @JvmOverloads constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rectF = RectF()
     
-    // Datos de ejemplo: Categoría to (Porcentaje, Color)
-    private val data = listOf(
-        Pair(45f, 0xFF1565C0.toInt()), // Comida - Azul Oscuro
-        Pair(30f, 0xFF1E88E5.toInt()), // Bebida - Azul Medio
-        Pair(15f, 0xFF64B5F6.toInt()), // Logística - Azul Claro
-        Pair(10f, 0xFFBBDEFB.toInt())  // Otros - Azul Muy Claro
-    )
+    private var data: List<Pair<Float, Int>> = emptyList()
+
+    fun setData(newData: List<Pair<Float, Int>>) {
+        this.data = newData
+        invalidate()
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
+        if (data.isEmpty()) return
+
         val size = Math.min(width, height).toFloat()
         val padding = 20f
         rectF.set(padding, padding, size - padding, size - padding)
