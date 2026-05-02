@@ -14,6 +14,8 @@ import androidx.lifecycle.lifecycleScope
 import com.tuapp.eventos.databinding.DialogEditEventBinding
 import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.ui.events.EventViewModel
+import com.skydoves.colorpickerview.ColorPickerDialog
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -151,14 +153,35 @@ class EditEventDialogFragment : DialogFragment() {
             }
             binding.llColorContainer.addView(colorView)
         }
+
+        binding.cvCustomColor.setOnClickListener {
+            ColorPickerDialog.Builder(requireContext())
+                .setTitle("Seleccionar Color")
+                .setPreferenceName("EventColorPicker")
+                .setPositiveButton("Confirmar", ColorEnvelopeListener { envelope, _ ->
+                    selectedColor = "#${envelope.hexCode}"
+                    updateColorSelectionUI()
+                })
+                .setNegativeButton("Cancelar") { dialogInterface, _ ->
+                    dialogInterface.dismiss()
+                }
+                .attachAlphaSlideBar(false)
+                .attachBrightnessSlideBar(true)
+                .show()
+        }
+
         updateColorSelectionUI()
     }
 
     private fun updateColorSelectionUI() {
+        val predefinedColors = listOf("#1565C0", "#1E88E5", "#43A047", "#E53935", "#FB8C00", "#8E24AA", "#FDD835")
+        var anyPredefinedSelected = false
+
         for (i in 0 until binding.llColorContainer.childCount) {
             val view = binding.llColorContainer.getChildAt(i)
             val colorStr = view.tag as String
-            val isSelected = selectedColor == colorStr
+            val isSelected = selectedColor.uppercase() == colorStr.uppercase()
+            if (isSelected) anyPredefinedSelected = true
             
             val drawable = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -173,6 +196,21 @@ class EditEventDialogFragment : DialogFragment() {
             view.scaleX = if (isSelected) 1.1f else 1.0f
             view.scaleY = if (isSelected) 1.1f else 1.0f
         }
+
+        // Si el seleccionado no es predefinido, marcamos el botón de custom
+        try {
+            binding.cvCustomColor.strokeColor = if (!anyPredefinedSelected) 
+                android.graphics.Color.parseColor(selectedColor) 
+            else 
+                android.graphics.Color.parseColor("#DDDDDD")
+        } catch (_: Exception) {
+            binding.cvCustomColor.strokeColor = android.graphics.Color.parseColor("#DDDDDD")
+        }
+        
+        binding.cvCustomColor.strokeWidth = if (!anyPredefinedSelected) 
+            (3 * resources.displayMetrics.density).toInt() 
+        else 
+            (1 * resources.displayMetrics.density).toInt()
     }
 
     private fun populateFields(event: Event) {
@@ -237,7 +275,6 @@ class EditEventDialogFragment : DialogFragment() {
                         binding.btnSave.isEnabled = false
                     }
                     is EventViewModel.CreateEventState.Success -> {
-                        viewModel.resetCreateState()
                         dismiss()
                     }
                     is EventViewModel.CreateEventState.Error -> {
@@ -245,7 +282,9 @@ class EditEventDialogFragment : DialogFragment() {
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         viewModel.resetCreateState()
                     }
-                    else -> {}
+                    is EventViewModel.CreateEventState.Idle -> {
+                        binding.btnSave.isEnabled = true
+                    }
                 }
             }
         }
@@ -254,6 +293,11 @@ class EditEventDialogFragment : DialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        viewModel.resetCreateState()
     }
 
     companion object {

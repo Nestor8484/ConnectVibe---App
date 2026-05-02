@@ -73,6 +73,9 @@
     <string name="custom_color">Color personalizado</string>
     <string name="hint_custom_hex_color">Color Hexadecimal (ej: #FF5722)</string>
     <string name="error_invalid_color">Color inválido</string>
+    <string name="select_group">Seleccionar Grupo</string>
+    <string name="hint_event_belongs_to_group">Este evento pertenecerá al grupo actual</string>
+    <string name="hint_creating_public_event">Creando un evento de visibilidad pública</string>
 
     <string name="category_food">Food</string>
     <string name="category_drinks">Drinks</string>

@@ -30,7 +30,13 @@ class EventAdapter(
         fun bind(event: Event, onEventClick: (Event) -> Unit) {
             binding.tvEventTitle.text = event.name
             binding.tvEventDate.text = event.startDate?.let { dateFormat.format(it) } ?: "Próximamente"
-            binding.tvEventLocation.text = event.visibility.replaceFirstChar { it.uppercase() }
+            
+            val visibilityText = event.visibility.replaceFirstChar { it.uppercase() }
+            binding.tvEventLocation.text = if (event.visibility == "private" && !event.groupName.isNullOrBlank()) {
+                "$visibilityText • ${event.groupName}"
+            } else {
+                visibilityText
+            }
 
             // Aplicar color e icono
             val color = try {

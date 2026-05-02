@@ -132,6 +132,10 @@ data class Event(
     @SerialName("color")
     val color: String? = null,
     
+    @SerialName("group_name")
+    @Transient
+    val groupName: String? = null,
+    
     // UI temporary state (Transient - not sent to DB)
     @Transient
     val isUserParticipating: Boolean = false

@@ -71,6 +71,8 @@
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
         android:paddingTop="16dp"
+        android:paddingBottom="80dp"
+        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <!-- Info de Participación -->
@@ -127,8 +129,7 @@
             android:layout_height="match_parent"
             android:background="@drawable/bg_content_box"
             android:orientation="vertical"
-            android:padding="4dp"
-            android:paddingBottom="48dp">
+            android:padding="4dp">
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabLayout"
@@ -185,37 +186,38 @@
                                     android:id="@+id/btnStatusAction"
                                     style="@style/Widget.Material3.Button.TonalButton"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="32dp"
-                                    android:paddingHorizontal="8dp"
+                                    android:layout_height="36dp"
+                                    android:paddingHorizontal="16dp"
                                     android:insetTop="0dp"
                                     android:insetBottom="0dp"
                                     android:text="Iniciar"
-                                    android:textSize="10sp"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
                                     android:visibility="gone"
-                                    app:cornerRadius="16dp"
+                                    app:cornerRadius="18dp"
                                     tools:visibility="visible" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnEditEvent"
                                     style="@style/Widget.Material3.Button.IconButton"
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:layout_marginStart="2dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="44dp"
+                                    android:layout_marginStart="8dp"
                                     android:visibility="gone"
                                     app:icon="@android:drawable/ic_menu_edit"
-                                    app:iconSize="18dp"
+                                    app:iconSize="24dp"
                                     app:iconTint="?attr/colorPrimary"
                                     tools:visibility="visible" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btnDeleteEvent"
                                     style="@style/Widget.Material3.Button.IconButton"
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:layout_marginStart="2dp"
+                                    android:layout_width="44dp"
+                                    android:layout_height="44dp"
+                                    android:layout_marginStart="4dp"
                                     android:visibility="gone"
                                     app:icon="@android:drawable/ic_menu_delete"
-                                    app:iconSize="18dp"
+                                    app:iconSize="24dp"
                                     app:iconTint="#D32F2F"
                                     tools:visibility="visible" />
                             </LinearLayout>
@@ -453,36 +455,6 @@
                             </LinearLayout>
                         </GridLayout>
 
-                        <!-- Nueva estadística: Progreso de Tareas -->
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Progreso de Tareas"
-                            android:textColor="#1565C0"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="12dp"/>
-
-                        <com.google.android.material.progressindicator.LinearProgressIndicator
-                            android:id="@+id/taskProgressBar"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:progress="0"
-                            app:trackColor="#E3F2FD"
-                            app:indicatorColor="#1565C0"
-                            app:trackThickness="12dp"
-                            app:trackCornerRadius="6dp" />
-
-                        <TextView
-                            android:id="@+id/tvTaskProgress"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="0% de las tareas del evento completadas"
-                            android:textAlignment="center"
-                            android:textSize="12sp"
-                            android:textColor="@color/md_theme_onSurfaceVariant"/>
-
                     </LinearLayout>
                 </ScrollView>
 
@@ -498,7 +470,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="64dp"
         android:contentDescription="@string/add_role"
         app:srcCompat="@android:drawable/ic_input_add"
         android:visibility="gone"
@@ -511,7 +483,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="64dp"
         android:contentDescription="@string/add_expense"
         app:srcCompat="@android:drawable/ic_input_add"
         android:visibility="gone"

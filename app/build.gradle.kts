@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.websockets)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.skydoves.colorpicker)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -28,9 +28,34 @@ class EventRepositoryImpl : EventRepository {
 
     override fun getEvents(): Flow<List<Event>> = flow {
         try {
-            val events = client.from("events")
-                .select()
-                .decodeList<Event>()
+            val response = client.from("events")
+                .select(Columns.raw("*, groups(name)"))
+            
+            val jsonElement = Json.parseToJsonElement(response.data)
+            if (jsonElement !is kotlinx.serialization.json.JsonArray) {
+                emit(emptyList())
+                return@flow
+            }
+
+            val events = jsonElement.mapNotNull { element ->
+                try {
+                    val obj = element.jsonObject
+                    val eventJson = JsonObject(obj.filterKeys { it != "groups" })
+                    val event = Json.decodeFromJsonElement(Event.serializer(), eventJson)
+                    
+                    val groupsElement = obj["groups"]
+                    val groupName = when (groupsElement) {
+                        is kotlinx.serialization.json.JsonObject -> groupsElement["name"]?.jsonPrimitive?.contentOrNull
+                        is kotlinx.serialization.json.JsonArray -> if (groupsElement.isNotEmpty()) groupsElement[0].jsonObject["name"]?.jsonPrimitive?.contentOrNull else null
+                        else -> null
+                    }
+                    
+                    event.copy(groupName = groupName)
+                } catch (e: Exception) {
+                    android.util.Log.e("EventRepository", "Error parsing event row: ${e.message}")
+                    null
+                }
+            }
             emit(events)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error fetching events: ${e.message}")
@@ -40,13 +65,30 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun getEventById(id: String): Event? {
         return try {
-            client.from("events")
-                .select {
+            val response = client.from("events")
+                .select(Columns.raw("*, groups(name)")) {
                     filter {
                         eq("id", id)
                     }
                 }
-                .decodeSingle<Event>()
+            
+            val jsonElement = Json.parseToJsonElement(response.data)
+            if (jsonElement is kotlinx.serialization.json.JsonArray && jsonElement.isNotEmpty()) {
+                val obj = jsonElement[0].jsonObject
+                val eventJson = JsonObject(obj.filterKeys { it != "groups" })
+                val event = Json.decodeFromJsonElement(Event.serializer(), eventJson)
+                
+                val groupsElement = obj["groups"]
+                val groupName = when (groupsElement) {
+                    is kotlinx.serialization.json.JsonObject -> groupsElement["name"]?.jsonPrimitive?.contentOrNull
+                    is kotlinx.serialization.json.JsonArray -> if (groupsElement.isNotEmpty()) groupsElement[0].jsonObject["name"]?.jsonPrimitive?.contentOrNull else null
+                    else -> null
+                }
+                
+                event.copy(groupName = groupName)
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }
@@ -556,13 +598,38 @@ class EventRepositoryImpl : EventRepository {
 
     override fun getEventsByGroup(groupId: String): Flow<List<Event>> = flow {
         try {
-            val events = client.from("events")
-                .select {
+            val response = client.from("events")
+                .select(Columns.raw("*, groups(name)")) {
                     filter {
                         eq("group_id", groupId)
                     }
                 }
-                .decodeList<Event>()
+            
+            val jsonElement = Json.parseToJsonElement(response.data)
+            if (jsonElement !is kotlinx.serialization.json.JsonArray) {
+                emit(emptyList())
+                return@flow
+            }
+
+            val events = jsonElement.mapNotNull { element ->
+                try {
+                    val obj = element.jsonObject
+                    val eventJson = JsonObject(obj.filterKeys { it != "groups" })
+                    val event = Json.decodeFromJsonElement(Event.serializer(), eventJson)
+                    
+                    val groupsElement = obj["groups"]
+                    val groupName = when (groupsElement) {
+                        is kotlinx.serialization.json.JsonObject -> groupsElement["name"]?.jsonPrimitive?.contentOrNull
+                        is kotlinx.serialization.json.JsonArray -> if (groupsElement.isNotEmpty()) groupsElement[0].jsonObject["name"]?.jsonPrimitive?.contentOrNull else null
+                        else -> null
+                    }
+                    
+                    event.copy(groupName = groupName)
+                } catch (e: Exception) {
+                    android.util.Log.e("EventRepository", "Error parsing event row: ${e.message}")
+                    null
+                }
+            }
             emit(events)
         } catch (e: Exception) {
             emit(emptyList())

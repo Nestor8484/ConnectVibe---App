@@ -495,21 +495,6 @@ class EventDetailFragment : Fragment() {
                             binding.tvTotalExpense.setTextColor(colorInt)
                             binding.tvRolesCovered.setTextColor(colorInt)
                             
-                            // Títulos de Dashboard
-                            binding.layoutDashboard.findViewById<TextView>(R.id.tvTaskProgress)?.parent?.let { parent ->
-                                (parent as? ViewGroup)?.let { vg ->
-                                    for (i in 0 until vg.childCount) {
-                                        val child = vg.getChildAt(i)
-                                        if (child is TextView && child.id != R.id.tvTaskProgress && child.id != R.id.tvTotalExpense && child.id != R.id.tvRolesCovered) {
-                                            child.setTextColor(colorInt)
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            binding.taskProgressBar.setIndicatorColor(colorInt)
-                            binding.taskProgressBar.trackColor = alphaColor
-
                         } catch (e: Exception) {
                             android.util.Log.e("EventDetail", "Error applying event color: ${e.message}")
                         }
@@ -597,29 +582,6 @@ class EventDetailFragment : Fragment() {
                 updateDashboardRoles(roles, members)
             }
         }
-
-        // Observar tareas para el Dashboard (Deshabilitado: tabla event_tasks no existe)
-        /*
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.tasks.collectLatest { tasks ->
-                updateTaskProgress(tasks)
-            }
-        }
-        */
-    }
-
-    private fun updateTaskProgress(tasks: List<com.tuapp.eventos.domain.model.EventTask>) {
-        if (tasks.isEmpty()) {
-            binding.taskProgressBar.progress = 0
-            binding.tvTaskProgress.text = "No hay tareas asignadas"
-            return
-        }
-
-        val completedTasks = tasks.count { it.isCompleted }
-        val progress = (completedTasks.toFloat() / tasks.size * 100).toInt()
-
-        binding.taskProgressBar.progress = progress
-        binding.tvTaskProgress.text = "$progress% de las tareas del evento completadas ($completedTasks/${tasks.size})"
     }
 
     private fun updateDashboardExpenses(expenses: List<Expense>) {

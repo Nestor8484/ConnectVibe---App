@@ -208,6 +208,41 @@ class GroupRepository {
         }
     }
 
+    suspend fun getAdminGroupsForUser(userId: String): Result<List<Group>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = client.from("group_members")
+                    .select(Columns.raw("groups(*)")) {
+                        filter {
+                            eq("user_id", userId)
+                            eq("status", "active")
+                            eq("is_admin", true)
+                        }
+                    }
+                
+                val resultList = mutableListOf<Group>()
+                val jsonArray = json.parseToJsonElement(response.data)
+                
+                if (jsonArray is kotlinx.serialization.json.JsonArray) {
+                    for (element in jsonArray) {
+                        try {
+                            val groupElement = element.jsonObject["groups"]
+                            if (groupElement != null) {
+                                val group = json.decodeFromJsonElement<Group>(groupElement)
+                                resultList.add(group)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("GroupRepository", "Error decoding group: ${e.message}")
+                        }
+                    }
+                }
+                Result.success(resultList)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     suspend fun searchUsers(query: String): Result<List<Profile>> {
         return withContext(Dispatchers.IO) {
             try {

@@ -13,6 +13,7 @@ supabase = "3.0.1"
 ktor = "3.0.1"
 serialization = "1.6.3"
 kotlin = "2.0.0"
+colorpicker = "2.2.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +37,7 @@ ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+skydoves-colorpicker = { group = "com.github.skydoves", name = "colorpickerview", version.ref = "colorpicker" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

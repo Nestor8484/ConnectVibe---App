@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 class EventViewModel : ViewModel() {
 
     private val repository: EventRepository = EventRepositoryImpl()
+    private val groupRepository = com.tuapp.eventos.data.repository.GroupRepository()
 
     private val _eventsState = MutableStateFlow<EventsState>(EventsState.Loading)
     val eventsState: StateFlow<EventsState> = _eventsState.asStateFlow()
@@ -52,6 +53,18 @@ class EventViewModel : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<com.tuapp.eventos.domain.model.EventTask>>(emptyList())
     val tasks: StateFlow<List<com.tuapp.eventos.domain.model.EventTask>> = _tasks.asStateFlow()
+
+    private val _adminGroups = MutableStateFlow<List<com.tuapp.eventos.data.model.Group>>(emptyList())
+    val adminGroups: StateFlow<List<com.tuapp.eventos.data.model.Group>> = _adminGroups.asStateFlow()
+
+    fun loadAdminGroups(userId: String) {
+        viewModelScope.launch {
+            val result = groupRepository.getAdminGroupsForUser(userId)
+            if (result.isSuccess) {
+                _adminGroups.value = result.getOrDefault(emptyList())
+            }
+        }
+    }
 
     fun loadPublicEvents(currentUserId: String?) {
         viewModelScope.launch {

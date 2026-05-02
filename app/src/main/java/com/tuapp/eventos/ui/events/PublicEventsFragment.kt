@@ -57,7 +57,10 @@ class PublicEventsFragment : Fragment() {
         viewModel.loadPublicEvents(userId)
         
         binding.fabAddEvent.setOnClickListener {
-            findNavController().navigate(R.id.action_global_createEventFragment)
+            val bundle = Bundle().apply {
+                putBoolean("forcePublic", true)
+            }
+            findNavController().navigate(R.id.action_global_createEventFragment, bundle)
         }
 
         binding.ivUserProfile.setOnClickListener {

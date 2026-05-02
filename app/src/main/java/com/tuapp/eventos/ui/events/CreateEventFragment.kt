@@ -14,8 +14,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.DialogAddRoleBinding
 import com.tuapp.eventos.databinding.FragmentCreateEventBinding
+import com.skydoves.colorpickerview.ColorPickerDialog
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import com.tuapp.eventos.di.SupabaseModule
 import com.tuapp.eventos.domain.model.Event
 import com.tuapp.eventos.domain.model.Role
@@ -50,6 +53,9 @@ class CreateEventFragment : Fragment() {
     private var startDateTime: Calendar = Calendar.getInstance()
     private var endDateTime: Calendar = Calendar.getInstance().apply { add(Calendar.HOUR_OF_DAY, 1) }
     private val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    
+    private var selectedGroupId: String? = null
+    private var adminGroups: List<com.tuapp.eventos.data.model.Group> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -62,18 +68,52 @@ class CreateEventFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val groupId = arguments?.getString("groupId")
-        if (groupId != null) {
-            binding.switchPublic.isChecked = false
-            binding.switchPublic.isEnabled = false
-            binding.tvVisibilityHint.visibility = View.VISIBLE
-            binding.tvVisibilityHint.text = "Los eventos de grupo son siempre privados"
+        val forcePublic = arguments?.getBoolean("forcePublic", false) ?: false
+        val fixedGroupId = arguments?.getString("groupId")
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+
+        when {
+            fixedGroupId != null -> {
+                // Caso: Desde detalle de grupo -> Siempre privado y fijo
+                selectedGroupId = fixedGroupId
+                binding.switchPublic.isChecked = false
+                binding.switchPublic.isEnabled = false
+                binding.tilGroupSelector.visibility = View.GONE
+                binding.tvVisibilityHint.visibility = View.VISIBLE
+                binding.tvVisibilityHint.text = getString(R.string.hint_event_belongs_to_group)
+            }
+            forcePublic -> {
+                // Caso: Desde eventos públicos -> Siempre público
+                binding.switchPublic.isChecked = true
+                binding.switchPublic.isEnabled = false
+                binding.tilGroupSelector.visibility = View.GONE
+                binding.tvVisibilityHint.visibility = View.VISIBLE
+                binding.tvVisibilityHint.text = getString(R.string.hint_creating_public_event)
+            }
+            else -> {
+                // Caso: Desde Mis Eventos -> Opción de público o privado
+                binding.switchPublic.isChecked = false // Privado por defecto
+                binding.switchPublic.isEnabled = true
+                binding.tvVisibilityHint.visibility = View.GONE
+                
+                // Si es privado, mostrar selector de grupo
+                updateGroupSelectorVisibility()
+                
+                binding.switchPublic.setOnCheckedChangeListener { _, isChecked ->
+                    updateGroupSelectorVisibility()
+                }
+
+                if (userId != null) {
+                    viewModel.loadAdminGroups(userId)
+                }
+            }
         }
 
         setupRecyclerView()
         setupEventIconDropdown()
         setupEventColorSelection()
         setupDateTimePicker()
+        setupGroupSelector()
 
         editingEventId = arguments?.getString("eventId")
         if (editingEventId != null) {
@@ -93,6 +133,21 @@ class CreateEventFragment : Fragment() {
         }
 
         observeViewModel()
+    }
+
+    private fun updateGroupSelectorVisibility() {
+        if (!binding.switchPublic.isChecked) {
+            binding.tilGroupSelector.visibility = View.VISIBLE
+        } else {
+            binding.tilGroupSelector.visibility = View.GONE
+            selectedGroupId = null
+        }
+    }
+
+    private fun setupGroupSelector() {
+        binding.actvGroupSelector.setOnItemClickListener { _, _, position, _ ->
+            selectedGroupId = adminGroups[position].id
+        }
     }
 
     private fun setupRecyclerView() {
@@ -194,14 +249,35 @@ class CreateEventFragment : Fragment() {
             }
             binding.llEventColorContainer.addView(colorView)
         }
+
+        binding.cvCustomColor.setOnClickListener {
+            ColorPickerDialog.Builder(requireContext())
+                .setTitle("Seleccionar Color")
+                .setPreferenceName("CreateEventColorPicker")
+                .setPositiveButton("Confirmar", ColorEnvelopeListener { envelope, _ ->
+                    selectedEventColor = "#${envelope.hexCode}"
+                    updateEventColorSelectionUI()
+                })
+                .setNegativeButton("Cancelar") { dialogInterface, _ ->
+                    dialogInterface.dismiss()
+                }
+                .attachAlphaSlideBar(false)
+                .attachBrightnessSlideBar(true)
+                .show()
+        }
+
         updateEventColorSelectionUI()
     }
 
     private fun updateEventColorSelectionUI() {
+        val predefinedColors = listOf("#1565C0", "#2E7D32", "#C62828", "#F9A825", "#6A1B9A", "#EF6C00", "#00838F", "#37474F")
+        var anyPredefinedSelected = false
+
         for (i in 0 until binding.llEventColorContainer.childCount) {
             val view = binding.llEventColorContainer.getChildAt(i)
             val colorStr = view.tag as String
-            val isSelected = selectedEventColor == colorStr
+            val isSelected = selectedEventColor.uppercase() == colorStr.uppercase()
+            if (isSelected) anyPredefinedSelected = true
             
             val drawable = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -216,6 +292,21 @@ class CreateEventFragment : Fragment() {
             view.scaleX = if (isSelected) 1.15f else 1.0f
             view.scaleY = if (isSelected) 1.15f else 1.0f
         }
+
+        // Si el seleccionado no es predefinido, marcamos el botón de custom
+        try {
+            binding.cvCustomColor.strokeColor = if (!anyPredefinedSelected) 
+                android.graphics.Color.parseColor(selectedEventColor) 
+            else 
+                android.graphics.Color.parseColor("#DDDDDD")
+        } catch (_: Exception) {
+            binding.cvCustomColor.strokeColor = android.graphics.Color.parseColor("#DDDDDD")
+        }
+        
+        binding.cvCustomColor.strokeWidth = if (!anyPredefinedSelected) 
+            (3 * resources.displayMetrics.density).toInt() 
+        else 
+            (1 * resources.displayMetrics.density).toInt()
     }
 
     private fun setupEditMode() {
@@ -230,6 +321,7 @@ class CreateEventFragment : Fragment() {
                     binding.etTitle.setText(it.name)
                     binding.etDescription.setText(it.description)
                     binding.switchPublic.isChecked = it.visibility == "public"
+                    selectedGroupId = it.groupId
                     binding.acEventIcon.setText(it.icon ?: "Evento General", false)
                     selectedEventColor = it.color ?: "#1565C0"
                     it.startDate?.let { date ->
@@ -276,7 +368,12 @@ class CreateEventFragment : Fragment() {
         }
 
         val visibilityValue = if (isPublic) "public" else "private"
-        val groupId = arguments?.getString("groupId")
+        val groupId = selectedGroupId
+
+        if (visibilityValue == "private" && groupId == null) {
+            Toast.makeText(context, "Debes seleccionar un grupo para crear un evento privado", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         if (editingEventId != null) {
             // Lógica de Actualización
@@ -314,6 +411,15 @@ class CreateEventFragment : Fragment() {
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.adminGroups.collectLatest { groups ->
+                adminGroups = groups
+                val names = groups.map { it.name }
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
+                binding.actvGroupSelector.setAdapter(adapter)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.createEventState.collectLatest { state ->
                 when (state) {
                     is EventViewModel.CreateEventState.Loading -> {
@@ -322,14 +428,14 @@ class CreateEventFragment : Fragment() {
                     is EventViewModel.CreateEventState.Success -> {
                         val msg = if (editingEventId != null) "Evento actualizado" else "Evento creado correctamente"
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                        viewModel.resetCreateState()
                         findNavController().popBackStack()
                     }
                     is EventViewModel.CreateEventState.Error -> {
                         binding.btnSaveEvent.isEnabled = true
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetCreateState()
                     }
-                    else -> {
+                    is EventViewModel.CreateEventState.Idle -> {
                         binding.btnSaveEvent.isEnabled = true
                     }
                 }

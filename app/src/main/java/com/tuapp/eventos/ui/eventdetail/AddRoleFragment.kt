@@ -12,6 +12,8 @@ import androidx.lifecycle.lifecycleScope
 import com.tuapp.eventos.databinding.DialogAddRoleBinding
 import com.tuapp.eventos.domain.model.Role
 import com.tuapp.eventos.ui.events.EventViewModel
+import com.skydoves.colorpickerview.ColorPickerDialog
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -87,7 +89,6 @@ class AddRoleFragment : DialogFragment() {
                 tag = colorStr
                 setOnClickListener {
                     selectedColor = colorStr
-                    binding.tilCustomColor.visibility = View.GONE
                     updateColorSelectionUI()
                 }
             }
@@ -95,37 +96,20 @@ class AddRoleFragment : DialogFragment() {
         }
 
         binding.cvCustomColor.setOnClickListener {
-            binding.tilCustomColor.visibility = if (binding.tilCustomColor.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            if (binding.tilCustomColor.visibility == View.VISIBLE) {
-                binding.etCustomColor.requestFocus()
-                // Si ya hay un color personalizado seleccionado (no está en la lista predef), lo ponemos
-                if (!colors.contains(selectedColor)) {
-                    binding.etCustomColor.setText(selectedColor)
+            ColorPickerDialog.Builder(requireContext())
+                .setTitle("Seleccionar Color")
+                .setPreferenceName("MyColorPicker")
+                .setPositiveButton("Confirmar", ColorEnvelopeListener { envelope, _ ->
+                    selectedColor = "#${envelope.hexCode}"
+                    updateColorSelectionUI()
+                })
+                .setNegativeButton("Cancelar") { dialogInterface, _ ->
+                    dialogInterface.dismiss()
                 }
-            }
+                .attachAlphaSlideBar(false)
+                .attachBrightnessSlideBar(true)
+                .show()
         }
-
-        binding.etCustomColor.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                val hex = s.toString()
-                if (hex.startsWith("#") && (hex.length == 4 || hex.length == 7)) {
-                    try {
-                        android.graphics.Color.parseColor(hex)
-                        selectedColor = hex
-                        updateColorSelectionUI()
-                    } catch (e: Exception) {}
-                } else if (!hex.startsWith("#") && (hex.length == 3 || hex.length == 6)) {
-                    try {
-                        val formattedHex = "#$hex"
-                        android.graphics.Color.parseColor(formattedHex)
-                        selectedColor = formattedHex
-                        updateColorSelectionUI()
-                    } catch (e: Exception) {}
-                }
-            }
-        })
 
         updateColorSelectionUI()
     }
@@ -160,7 +144,7 @@ class AddRoleFragment : DialogFragment() {
                 android.graphics.Color.parseColor(selectedColor) 
             else 
                 android.graphics.Color.parseColor("#DDDDDD")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             binding.cvCustomColor.strokeColor = android.graphics.Color.parseColor("#DDDDDD")
         }
         
@@ -179,12 +163,6 @@ class AddRoleFragment : DialogFragment() {
         binding.acRoleIcon.setText(role.icon, false)
         selectedColor = role.color ?: "#1565C0"
         
-        val predefinedColors = listOf("#1565C0", "#1E88E5", "#43A047", "#E53935", "#FB8C00", "#8E24AA", "#FDD835")
-        if (!predefinedColors.contains(selectedColor.uppercase())) {
-            binding.tilCustomColor.visibility = View.VISIBLE
-            binding.etCustomColor.setText(selectedColor)
-        }
-
         updateColorSelectionUI()
     }
 
@@ -240,7 +218,6 @@ class AddRoleFragment : DialogFragment() {
                         binding.btnConfirm.isEnabled = false
                     }
                     is EventViewModel.RoleOpState.Success -> {
-                        viewModel.resetRoleOpState()
                         dismiss()
                     }
                     is EventViewModel.RoleOpState.Error -> {
@@ -248,7 +225,9 @@ class AddRoleFragment : DialogFragment() {
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         viewModel.resetRoleOpState()
                     }
-                    else -> {}
+                    is EventViewModel.RoleOpState.Idle -> {
+                        binding.btnConfirm.isEnabled = true
+                    }
                 }
             }
         }
@@ -257,6 +236,11 @@ class AddRoleFragment : DialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        viewModel.resetRoleOpState()
     }
 
     companion object {

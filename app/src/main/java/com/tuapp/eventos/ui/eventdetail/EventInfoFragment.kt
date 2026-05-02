@@ -135,12 +135,13 @@ class EventInfoFragment : Fragment() {
                             binding.ivCalendarIcon.imageTintList = android.content.res.ColorStateList.valueOf(colorInt)
 
                             // 3. Card de participantes (fondo suave + borde)
-                            val card = binding.rvParticipants.parent as? com.google.android.material.card.MaterialCardView
-                            card?.let { c ->
-                                c.setCardBackgroundColor(alphaColor)
-                                c.strokeColor = colorInt
-                                c.strokeWidth = (2 * density).toInt()
-                                c.cardElevation = 0f
+                            binding.rvParticipants.apply {
+                                val bg = android.graphics.drawable.GradientDrawable().apply {
+                                    setColor(alphaColor)
+                                    setStroke((2 * density).toInt(), colorInt)
+                                    cornerRadius = 16 * density
+                                }
+                                background = bg
                             }
 
                             // 4. Botón Añadir Participante

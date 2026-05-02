@@ -13,6 +13,8 @@ import androidx.navigation.fragment.findNavController
 import com.tuapp.eventos.R
 import com.tuapp.eventos.databinding.FragmentCreateGroupBinding
 import com.tuapp.eventos.di.SupabaseModule
+import com.skydoves.colorpickerview.ColorPickerDialog
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 
@@ -72,14 +74,35 @@ class CreateGroupFragment : Fragment() {
             }
             binding.llGroupColorContainer.addView(colorView)
         }
+
+        binding.cvCustomColor.setOnClickListener {
+            ColorPickerDialog.Builder(requireContext())
+                .setTitle("Seleccionar Color")
+                .setPreferenceName("GroupColorPicker")
+                .setPositiveButton("Confirmar", ColorEnvelopeListener { envelope, _ ->
+                    selectedGroupColor = "#${envelope.hexCode}"
+                    updateColorSelectionUI()
+                })
+                .setNegativeButton("Cancelar") { dialogInterface, _ ->
+                    dialogInterface.dismiss()
+                }
+                .attachAlphaSlideBar(false)
+                .attachBrightnessSlideBar(true)
+                .show()
+        }
+
         updateColorSelectionUI()
     }
 
     private fun updateColorSelectionUI() {
+        val predefinedColors = listOf("#1565C0", "#2E7D32", "#C62828", "#F9A825", "#6A1B9A", "#EF6C00", "#00838F", "#37474F")
+        var anyPredefinedSelected = false
+
         for (i in 0 until binding.llGroupColorContainer.childCount) {
             val view = binding.llGroupColorContainer.getChildAt(i)
             val colorStr = view.tag as String
-            val isSelected = selectedGroupColor == colorStr
+            val isSelected = selectedGroupColor.uppercase() == colorStr.uppercase()
+            if (isSelected) anyPredefinedSelected = true
             
             val drawable = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -94,6 +117,21 @@ class CreateGroupFragment : Fragment() {
             view.scaleX = if (isSelected) 1.15f else 1.0f
             view.scaleY = if (isSelected) 1.15f else 1.0f
         }
+
+        // Si el seleccionado no es predefinido, marcamos el botón de custom
+        try {
+            binding.cvCustomColor.strokeColor = if (!anyPredefinedSelected) 
+                android.graphics.Color.parseColor(selectedGroupColor) 
+            else 
+                android.graphics.Color.parseColor("#DDDDDD")
+        } catch (_: Exception) {
+            binding.cvCustomColor.strokeColor = android.graphics.Color.parseColor("#DDDDDD")
+        }
+        
+        binding.cvCustomColor.strokeWidth = if (!anyPredefinedSelected) 
+            (3 * resources.displayMetrics.density).toInt() 
+        else 
+            (1 * resources.displayMetrics.density).toInt()
     }
 
     private fun createGroup() {
