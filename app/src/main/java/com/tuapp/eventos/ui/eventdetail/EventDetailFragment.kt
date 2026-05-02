@@ -749,6 +749,24 @@ class EventDetailFragment : Fragment() {
             .setView(dialogView)
             .create()
 
+        // Aplicar color del evento
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let { cStr ->
+            try {
+                val colorInt = android.graphics.Color.parseColor(cStr)
+                val card = dialogView as? com.google.android.material.card.MaterialCardView
+                card?.strokeColor = colorInt
+                card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                dialogView.findViewById<TextView>(R.id.tvDialogRoleName)?.setTextColor(colorInt)
+                dialogView.findViewById<MaterialButton>(R.id.btnAssign)?.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                dialogView.findViewById<TextView>(R.id.tvRoleStatus)?.let { 
+                    (it.background as? android.graphics.drawable.GradientDrawable)?.setStroke((1 * resources.displayMetrics.density).toInt(), colorInt)
+                    it.setTextColor(colorInt)
+                }
+            } catch (e: Exception) {}
+        }
+
         val tvName = dialogView.findViewById<TextView>(R.id.tvDialogRoleName)
         val tvDesc = dialogView.findViewById<TextView>(R.id.tvDialogRoleDescription)
         val tvStatus = dialogView.findViewById<TextView>(R.id.tvRoleStatus)
@@ -871,6 +889,20 @@ class EventDetailFragment : Fragment() {
         val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
             .setView(dialogView)
             .create()
+
+        // Aplicar color del evento
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let { cStr ->
+            try {
+                val colorInt = android.graphics.Color.parseColor(cStr)
+                val card = dialogView as? com.google.android.material.card.MaterialCardView
+                card?.strokeColor = colorInt
+                card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                dialogView.findViewById<TextView>(R.id.tvDialogExpenseName)?.setTextColor(colorInt)
+                dialogView.findViewById<TextView>(R.id.tvDialogExpenseAmount)?.setTextColor(colorInt)
+            } catch (e: Exception) {}
+        }
 
         val tvName = dialogView.findViewById<TextView>(R.id.tvDialogExpenseName)
         val tvAmount = dialogView.findViewById<TextView>(R.id.tvDialogExpenseAmount)
