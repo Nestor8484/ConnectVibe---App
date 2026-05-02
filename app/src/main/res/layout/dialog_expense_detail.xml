@@ -66,21 +66,36 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvDialogExpenseDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textColor="@color/md_theme_onSurfaceVariant"
-            android:text="• Pagado por: Usuario\n• Fecha: 12/03/2024\n• Estrategia: Dividir equitativamente" />
+            tools:text="• Pagado por: Usuario\n• Fecha: 12/03/2024" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUploadReceipt"
+            android:id="@+id/btnEditExpense"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:paddingVertical="12dp"
-            android:text="Subir Ticket/Recibo"
+            android:text="Editar Gasto"
+            android:visibility="gone"
             app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_menu_upload" />
+            app:icon="@android:drawable/ic_menu_edit"
+            tools:visibility="visible" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteExpense"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Eliminar Gasto"
+            android:textColor="@color/design_default_color_error"
+            android:visibility="gone"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconTint="@color/design_default_color_error"
+            tools:visibility="visible" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCloseExpense"

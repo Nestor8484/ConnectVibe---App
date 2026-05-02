@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -25,6 +26,7 @@ class PublicEventsFragment : Fragment() {
 
     private val viewModel: EventViewModel by viewModels()
     private val notificationViewModel: NotificationViewModel by viewModels()
+    private var allEvents: List<com.tuapp.eventos.domain.model.Event> = emptyList()
 
     private val eventAdapter = EventAdapter { event ->
         val bundle = Bundle().apply {
@@ -48,6 +50,7 @@ class PublicEventsFragment : Fragment() {
         
         setupToolbar()
         setupRecyclerView()
+        setupFilters()
         observeViewModel()
         
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
@@ -77,6 +80,32 @@ class PublicEventsFragment : Fragment() {
         }
     }
 
+    private fun setupFilters() {
+        val options = arrayOf("Todos", "Pendientes", "En curso", "Finalizados")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, options)
+        binding.actvEventFilter.setAdapter(adapter)
+        
+        // Mantener la selección actual o poner Pendientes por defecto
+        val currentText = binding.actvEventFilter.text.toString()
+        if (currentText.isEmpty() || !options.contains(currentText)) {
+            binding.actvEventFilter.setText(options[1], false)
+        }
+
+        binding.actvEventFilter.setOnItemClickListener { _, _, position, _ ->
+            filterEvents(options[position])
+        }
+    }
+
+    private fun filterEvents(filter: String) {
+        val filtered = when (filter) {
+            "Pendientes" -> allEvents.filter { it.status == "pending" }
+            "En curso" -> allEvents.filter { it.status == "started" }
+            "Finalizados" -> allEvents.filter { it.status == "finished" }
+            else -> allEvents
+        }
+        eventAdapter.submitList(filtered)
+    }
+
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.eventsState.collectLatest { state ->
@@ -84,7 +113,8 @@ class PublicEventsFragment : Fragment() {
                     is EventViewModel.EventsState.Loading -> {
                     }
                     is EventViewModel.EventsState.Success -> {
-                        eventAdapter.submitList(state.events)
+                        allEvents = state.events
+                        filterEvents(binding.actvEventFilter.text.toString())
                     }
                     is EventViewModel.EventsState.Error -> {
                         Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()

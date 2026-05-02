@@ -16,6 +16,7 @@ interface EventRepository {
     suspend fun getParticipatingEventIds(userId: String): Result<List<String>>
     suspend fun isUserParticipating(eventId: String, userId: String): Result<Boolean>
     suspend fun getEventParticipants(eventId: String): Result<List<com.tuapp.eventos.domain.model.GroupMember>>
+    suspend fun updateParticipantRole(eventId: String, userId: String, isAdmin: Boolean): Result<Unit>
     suspend fun deleteEvent(eventId: String): Result<Unit>
     
     // Roles
@@ -30,7 +31,10 @@ interface EventRepository {
     suspend fun assignMultipleRoles(assignments: List<EventRoleMember>): Result<Unit>
 
     suspend fun addExpense(eventId: String, expense: Expense): Result<Unit>
+    suspend fun updateExpense(expense: Expense): Result<Unit>
+    suspend fun deleteExpense(expenseId: String): Result<Unit>
     suspend fun getExpenses(eventId: String): List<Expense>
     suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask>
     fun getEventsByGroup(groupId: String): Flow<List<Event>>
+    suspend fun getExpensesByGroup(groupId: String): Result<List<Expense>>
 }

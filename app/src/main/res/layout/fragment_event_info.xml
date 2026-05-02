@@ -103,6 +103,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="100dp"
+                android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_participant" />
         </com.google.android.material.card.MaterialCardView>
 

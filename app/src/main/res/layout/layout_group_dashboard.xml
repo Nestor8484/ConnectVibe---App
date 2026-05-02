@@ -13,7 +13,47 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilMonthFilter"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:hintEnabled="false">
+
+                <AutoCompleteTextView
+                    android:id="@+id/actvMonthFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:ignore="LabelFor"
+                    tools:text="Octubre 2023" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/swGroupByEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Por Evento"
+                android:textSize="11sp"
+                app:useMaterialThemeColors="true" />
+        </LinearLayout>
 
         <GridLayout
             android:layout_width="match_parent"
@@ -36,8 +76,15 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/total_spent" android:textSize="10sp" android:textColor="?attr/colorOnSecondaryContainer"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.240€" android:textSize="18sp" android:textStyle="bold" android:textColor="?attr/colorOnSecondaryContainer"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gasto Mensual" android:textSize="10sp" android:textColor="?attr/colorOnSecondaryContainer"/>
+                    <TextView
+                        android:id="@+id/tvGroupTotalExpense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0.00€"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSecondaryContainer"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -54,16 +101,24 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/tab_events" android:textSize="10sp" android:textColor="?attr/colorOnTertiaryContainer"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8" android:textSize="18sp" android:textStyle="bold" android:textColor="?attr/colorOnTertiaryContainer"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Eventos del Mes" android:textSize="10sp" android:textColor="?attr/colorOnTertiaryContainer"/>
+                    <TextView
+                        android:id="@+id/tvGroupEventCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnTertiaryContainer"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </GridLayout>
 
         <TextView
+            android:id="@+id/tvGroupChartTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/expenses_by_category"
+            android:text="Gastos por Evento"
             android:textColor="?attr/colorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
@@ -107,56 +162,32 @@
 
         <!-- Leyenda detallada -->
         <GridLayout
+            android:id="@+id/layoutGroupExpenseLegend"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:columnCount="2"
             android:rowCount="2"
             android:layout_marginBottom="24dp">
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center_vertical" android:padding="4dp" android:layout_columnWeight="1">
-                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#1565C0"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Comida (550€)" android:textSize="12sp" android:layout_marginStart="8dp"/>
-            </LinearLayout>
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center_vertical" android:padding="4dp" android:layout_columnWeight="1">
-                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#1E88E5"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bebida (320€)" android:textSize="12sp" android:layout_marginStart="8dp"/>
-            </LinearLayout>
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center_vertical" android:padding="4dp" android:layout_columnWeight="1">
-                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#64B5F6"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Logística (210€)" android:textSize="12sp" android:layout_marginStart="8dp"/>
-            </LinearLayout>
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center_vertical" android:padding="4dp" android:layout_columnWeight="1">
-                <View android:layout_width="12dp" android:layout_height="12dp" android:background="#BBDEFB"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Otros (160€)" android:textSize="12sp" android:layout_marginStart="8dp"/>
-            </LinearLayout>
+            <!-- Los elementos se añaden dinámicamente -->
         </GridLayout>
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/task_progress"
+            android:layout_marginTop="24dp"
+            android:text="Estado de Eventos (este mes)"
             android:textColor="?attr/colorPrimary"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="8dp"/>
 
-        <com.google.android.material.progressindicator.LinearProgressIndicator
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvGroupEventStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:progress="78"
-            app:trackColor="#E3F2FD"
-            app:indicatorColor="#1565C0"
-            app:trackThickness="12dp"
-            app:trackCornerRadius="6dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="78% de efectividad en tareas del grupo"
-            android:textAlignment="center"
-            android:textSize="12sp"
-            android:textColor="@color/md_theme_onSurfaceVariant"/>
+            android:nestedScrollingEnabled="false"
+            tools:listitem="@layout/item_event_status_small" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

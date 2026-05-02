@@ -27,6 +27,7 @@ class GroupAdapter(
             binding.tvEventLocation.text = group.description ?: "Sin descripción"
             binding.tvEventDate.visibility = android.view.View.GONE
             binding.llParticipantSummary.visibility = android.view.View.GONE
+            binding.tvEventStatus.visibility = android.view.View.GONE
             
             // Aplicar icono y color dinámico (estilo Roles/Eventos)
             val context = binding.root.context

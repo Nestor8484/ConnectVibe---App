@@ -1,5 +1,6 @@
 package com.tuapp.eventos.ui.events
 
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -41,6 +42,18 @@ class EventAdapter(
             binding.ivEventIcon.imageTintList = android.content.res.ColorStateList.valueOf(color)
             binding.root.strokeColor = color
             
+            // Estado del evento
+            binding.tvEventStatus.text = when(event.status) {
+                "pending" -> "Pendiente"
+                "started" -> "En curso"
+                "finished" -> "Finalizado"
+                else -> event.status.replaceFirstChar { it.uppercase() }
+            }
+            binding.tvEventStatus.setTextColor(color)
+            val statusBg = binding.tvEventStatus.background.mutate() as? GradientDrawable
+            statusBg?.setStroke(2, color)
+            binding.tvEventStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(color).withAlpha(30)
+            
             // Mapeo simple de iconos de texto a recursos
             val iconRes = when(event.icon) {
                 "Fiesta" -> android.R.drawable.btn_star_big_on
@@ -55,8 +68,14 @@ class EventAdapter(
             binding.ivEventIcon.setImageResource(iconRes)
 
             // Show summary if participating
-            binding.tvEventParticipantSummary.visibility = if (event.isUserParticipating) android.view.View.VISIBLE else android.view.View.GONE
-            binding.tvEventParticipantSummary.setTextColor(color)
+            if (event.isUserParticipating) {
+                binding.llParticipantSummary.visibility = android.view.View.VISIBLE
+                binding.tvEventParticipantSummary.setTextColor(color)
+                val imageView = binding.llParticipantSummary.getChildAt(0) as? android.widget.ImageView
+                imageView?.imageTintList = android.content.res.ColorStateList.valueOf(color)
+            } else {
+                binding.llParticipantSummary.visibility = android.view.View.GONE
+            }
 
             binding.root.setOnClickListener { 
                 onEventClick(event) 

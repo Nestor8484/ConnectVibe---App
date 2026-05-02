@@ -35,6 +35,17 @@ class ExpenseAdapter(
             binding.tvExpenseAmount.text = String.format("%.2f€", expense.amount)
             binding.tvExpenseType.text = expense.category
             
+            // Icono según categoría
+            val iconRes = when(expense.category) {
+                "Comida" -> android.R.drawable.ic_menu_gallery
+                "Bebida" -> android.R.drawable.btn_star
+                "Transporte" -> android.R.drawable.ic_menu_directions
+                "Alquiler", "Alojamiento" -> android.R.drawable.ic_menu_myplaces
+                "Decoración", "Entretenimiento" -> android.R.drawable.ic_menu_view
+                else -> android.R.drawable.ic_menu_today
+            }
+            binding.ivExpenseIcon.setImageResource(iconRes)
+            
             eventColor?.let { colorStr ->
                 try {
                     val colorInt = colorStr.toColorInt()

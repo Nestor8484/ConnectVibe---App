@@ -6,6 +6,8 @@ import com.tuapp.eventos.data.repository.EventRepository
 import com.tuapp.eventos.data.repository.EventRepositoryImpl
 import com.tuapp.eventos.domain.model.*
 import com.tuapp.eventos.domain.model.EventRoleMember
+import com.tuapp.eventos.di.SupabaseModule
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,8 +94,23 @@ class EventViewModel : ViewModel() {
     fun loadEventsByGroup(groupId: String) {
         viewModelScope.launch {
             _eventsState.value = EventsState.Loading
+            val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
+            
             repository.getEventsByGroup(groupId).collect { events ->
-                _eventsState.value = EventsState.Success(events)
+                if (userId != null) {
+                    val participatingResult = repository.getParticipatingEventIds(userId)
+                    if (participatingResult.isSuccess) {
+                        val joinedIds = participatingResult.getOrThrow()
+                        val updatedEvents = events.map { 
+                            it.copy(isUserParticipating = joinedIds.contains(it.id))
+                        }
+                        _eventsState.value = EventsState.Success(updatedEvents)
+                    } else {
+                        _eventsState.value = EventsState.Success(events)
+                    }
+                } else {
+                    _eventsState.value = EventsState.Success(events)
+                }
             }
         }
     }
@@ -103,6 +120,32 @@ class EventViewModel : ViewModel() {
             val result = repository.getEventParticipants(eventId)
             if (result.isSuccess) {
                 _participants.value = result.getOrThrow()
+            }
+        }
+    }
+
+    fun updateParticipantRole(eventId: String, userId: String, isAdmin: Boolean) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = repository.updateParticipantRole(eventId, userId, isAdmin)
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                loadParticipants(eventId)
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar rol")
+            }
+        }
+    }
+
+    fun removeParticipant(eventId: String, userId: String) {
+        viewModelScope.launch {
+            _roleOpState.value = RoleOpState.Loading
+            val result = repository.leaveEvent(eventId, userId)
+            if (result.isSuccess) {
+                _roleOpState.value = RoleOpState.Success
+                loadParticipants(eventId)
+            } else {
+                _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar participante")
             }
         }
     }
@@ -133,11 +176,22 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun loadGroupExpenses(groupId: String) {
+        viewModelScope.launch {
+            val result = repository.getExpensesByGroup(groupId)
+            if (result.isSuccess) {
+                _expenses.value = result.getOrDefault(emptyList())
+            }
+        }
+    }
+
     fun loadTasks(eventId: String) {
+        /* Deshabilitado: tabla event_tasks no existe
         viewModelScope.launch {
             val result = repository.getTasks(eventId)
             _tasks.value = result
         }
+        */
     }
 
     fun addExpense(eventId: String, expense: Expense) {
@@ -153,6 +207,32 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun updateExpense(eventId: String, expense: Expense) {
+        viewModelScope.launch {
+            _expenseOpState.value = RoleOpState.Loading
+            val result = repository.updateExpense(expense)
+            if (result.isSuccess) {
+                _expenseOpState.value = RoleOpState.Success
+                loadExpenses(eventId)
+            } else {
+                _expenseOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar gasto")
+            }
+        }
+    }
+
+    fun deleteExpense(eventId: String, expenseId: String) {
+        viewModelScope.launch {
+            _expenseOpState.value = RoleOpState.Loading
+            val result = repository.deleteExpense(expenseId)
+            if (result.isSuccess) {
+                _expenseOpState.value = RoleOpState.Success
+                loadExpenses(eventId)
+            } else {
+                _expenseOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar gasto")
+            }
+        }
+    }
+
     fun resetExpenseOpState() {
         _expenseOpState.value = RoleOpState.Idle
     }
@@ -160,6 +240,18 @@ class EventViewModel : ViewModel() {
     fun toggleRoleAssignment(roleId: String, userId: String, eventId: String, isAssigning: Boolean) {
         viewModelScope.launch {
             _roleOpState.value = RoleOpState.Loading
+
+            if (isAssigning) {
+                // Verificar si el rol ya alcanzó el máximo
+                val role = _roles.value.find { it.id == roleId }
+                val currentAssignedCount = _roleMembers.value.count { it.roleId == roleId }
+                
+                if (role?.maxPeople != null && currentAssignedCount >= role.maxPeople!!) {
+                    _roleOpState.value = RoleOpState.Error("Este rol ya alcanzó el número máximo de personas (${role.maxPeople})")
+                    return@launch
+                }
+            }
+
             val result = if (isAssigning) {
                 repository.assignRoleToUser(roleId, userId, eventId)
             } else {
@@ -249,11 +341,17 @@ class EventViewModel : ViewModel() {
         // 1. Identificar roles que necesitan gente
         for (role in currentRoles) {
             val minNeeded = role.minPeople ?: if (role.isMandatory) 1 else 0
+            val maxAllowed = role.maxPeople ?: Int.MAX_VALUE
             val currentAssignedCount = currentMembers.count { it.roleId == role.id }
             
             if (currentAssignedCount < minNeeded) {
-                val needed = minNeeded - currentAssignedCount
+                val stillNeeded = minNeeded - currentAssignedCount
+                val capacityLeft = maxAllowed - currentAssignedCount
                 
+                val toAssign = minOf(stillNeeded, capacityLeft)
+                
+                if (toAssign <= 0) continue
+
                 // 2. Buscar candidatos (priorizando los que no tienen roles obligatorios)
                 val candidates = allParticipants.filter { participant ->
                     // No está ya en este rol
@@ -263,7 +361,7 @@ class EventViewModel : ViewModel() {
                     currentMembers.count { it.userId == participant.userId }
                 }
 
-                candidates.take(needed).forEach { candidate ->
+                candidates.take(toAssign).forEach { candidate ->
                     newAssignments.add(EventRoleMember(
                         roleId = role.id!!,
                         userId = candidate.userId,

@@ -17,6 +17,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 class GroupRepository {
     private val client = SupabaseModule.client
@@ -67,7 +68,7 @@ class GroupRepository {
                         }
                     }
                 
-                Log.d("GroupRepository", "Raw Response: ${response.data}")
+                Log.d("GroupRepository", "Members response data: ${response.data}")
                 
                 val jsonElement = json.parseToJsonElement(response.data)
                 if (jsonElement !is kotlinx.serialization.json.JsonArray) {
@@ -82,10 +83,14 @@ class GroupRepository {
                         val userId = jsonObj["user_id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
 
                         // Mapear Miembro
+                        val isAdmin = jsonObj["is_admin"]?.jsonPrimitive?.let { 
+                            it.booleanOrNull ?: (it.content == "true") || (it.content == "1")
+                        } ?: false
+                        
                         val member = GroupMember(
                             group_id = jsonObj["group_id"]?.jsonPrimitive?.contentOrNull ?: groupId,
                             user_id = userId,
-                            is_admin = jsonObj["is_admin"]?.jsonPrimitive?.booleanOrNull ?: false,
+                            is_admin = isAdmin,
                             status = jsonObj["status"]?.jsonPrimitive?.contentOrNull ?: "active"
                         )
 
@@ -131,15 +136,24 @@ class GroupRepository {
     suspend fun isUserAdmin(groupId: String, userId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val member = client.from("group_members")
+                val response = client.from("group_members")
                     .select {
                         filter {
                             eq("group_id", groupId)
                             eq("user_id", userId)
                         }
-                    }.decodeSingleOrNull<GroupMember>()
-                member?.is_admin ?: false
+                    }
+                
+                val jsonElement = json.parseToJsonElement(response.data)
+                if (jsonElement is kotlinx.serialization.json.JsonArray && jsonElement.isNotEmpty()) {
+                    val jsonObj = jsonElement[0].jsonObject
+                    return@withContext jsonObj["is_admin"]?.jsonPrimitive?.let { 
+                        it.booleanOrNull ?: (it.content == "true") || (it.content == "1")
+                    } ?: false
+                }
+                false
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error checking admin status: ${e.message}")
                 false
             }
         }
@@ -377,6 +391,44 @@ class GroupRepository {
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e("GroupRepository", "Excepción al borrar notificación: ${e.message}")
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun updateMemberRole(groupId: String, userId: String, isAdmin: Boolean): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("GroupRepository", "Updating member role: group=$groupId, user=$userId, isAdmin=$isAdmin")
+                client.from("group_members").update(
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("is_admin", isAdmin)
+                    }
+                ) {
+                    filter {
+                        eq("group_id", groupId)
+                        eq("user_id", userId)
+                    }
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e("GroupRepository", "Error updating member role: ${e.message}")
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun removeMember(groupId: String, userId: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                client.from("group_members").delete {
+                    filter {
+                        eq("group_id", groupId)
+                        eq("user_id", userId)
+                    }
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
                 Result.failure(e)
             }
         }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="24dp"
@@ -130,20 +131,67 @@
                 android:textSize="14sp"
                 android:textStyle="bold"/>
 
-            <HorizontalScrollView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:scrollbars="none">
-                <LinearLayout
-                    android:id="@+id/llColorContainer"
-                    android:layout_width="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+
+                <HorizontalScrollView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingVertical="8dp">
-                    <!-- Los colores se añaden dinámicamente -->
-                </LinearLayout>
-            </HorizontalScrollView>
+                    android:layout_weight="1"
+                    android:scrollbars="none">
+                    <LinearLayout
+                        android:id="@+id/llColorContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="8dp">
+                        <!-- Los colores se añaden dinámicamente -->
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cvCustomColor"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="12dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#DDDDDD"
+                    app:strokeWidth="1dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:src="@android:drawable/ic_menu_add"
+                        app:tint="@color/md_theme_onSurfaceVariant"
+                        android:contentDescription="@string/custom_color" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCustomColor"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/hint_custom_hex_color"
+                android:visibility="gone"
+                app:boxStrokeColor="#1565C0"
+                app:endIconMode="custom"
+                tools:visibility="visible">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCustomColor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapCharacters"
+                    android:maxLength="7" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"

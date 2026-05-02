@@ -34,6 +34,7 @@ import com.tuapp.eventos.domain.model.MemberRole
 import com.tuapp.eventos.ui.events.EventViewModel
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
@@ -48,7 +49,18 @@ class EventDetailFragment : Fragment() {
     private var currentEventId: String? = null
     private var isUserAdmin = false
 
-    private val participantAdapter = ParticipantAdapter()
+    private val participantAdapter = ParticipantAdapter(
+        onAdminPromotion = { userId, isAdmin ->
+            currentEventId?.let { eventId ->
+                viewModel.updateParticipantRole(eventId, userId, isAdmin)
+            }
+        },
+        onRemoveMember = { userId ->
+            currentEventId?.let { eventId ->
+                viewModel.removeParticipant(eventId, userId)
+            }
+        }
+    )
 
     private val roleAdapter = RoleAdapter(
         onRoleClick = { role -> 
@@ -133,21 +145,14 @@ class EventDetailFragment : Fragment() {
             viewModel.loadRoles(currentEventId!!)
             if (userId != null) {
                 viewModel.checkParticipation(currentEventId!!, userId)
-                checkAdminStatus(userId)
             }
         }
     }
 
-    private fun checkAdminStatus(userId: String) {
-        // Logic to check if user is admin of the event
-        // For now, let's assume if they created the event or based on participation
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.participants.collectLatest { participants ->
-                val member = participants.find { it.userId == userId }
-                isUserAdmin = member?.role == MemberRole.ADMIN
-                updateAdminUi()
-            }
-        }
+    private fun canUserLeave(): Boolean {
+        val participants = viewModel.participants.value
+        val adminCount = participants.count { it.role == MemberRole.ADMIN }
+        return !isUserAdmin || adminCount > 1
     }
 
     private fun updateAdminUi() {
@@ -175,13 +180,17 @@ class EventDetailFragment : Fragment() {
         }
 
         if (isUserAdmin) {
+            val status = currentEvent?.status ?: "pending"
+            val selectedTab = binding.tabLayout.selectedTabPosition
+            
+            // El botón de acción (Iniciar/Finalizar) solo se muestra en la pestaña de Información
             binding.btnStatusAction.visibility = if (selectedTab == 3) View.VISIBLE else View.GONE
             when (status) {
                 "pending" -> {
-                    binding.btnStatusAction.text = "Iniciar Evento"
+                    binding.btnStatusAction.text = "Iniciar"
                 }
                 "started" -> {
-                    binding.btnStatusAction.text = "Finalizar Evento"
+                    binding.btnStatusAction.text = "Finalizar"
                 }
                 "finished" -> {
                     binding.btnStatusAction.visibility = View.GONE
@@ -193,8 +202,15 @@ class EventDetailFragment : Fragment() {
 
         roleAdapter.setAdminStatus(isUserAdmin && status == "pending")
         
-        binding.cbParticipateDetail.isEnabled = !isUserAdmin
-        binding.cbParticipateDetail.alpha = if (isUserAdmin) 0.6f else 1.0f
+        val canLeave = canUserLeave()
+        binding.cbParticipateDetail.isEnabled = canLeave
+        binding.cbParticipateDetail.alpha = if (canLeave) 1.0f else 0.6f
+        
+        // El checkbox siempre debe ser visible para permitir unirse si no se participa, 
+        // o para ver que se participa. El requerimiento del usuario "desaparecer el check" 
+        // se refiere a la LISTA (EventAdapter), donde si no participas no debe salir el indicador "Asistiendo".
+        // En el detalle, el checkbox es el mecanismo para unirse/abandonar.
+        binding.cbParticipateDetail.visibility = View.VISIBLE
     }
 
     private fun handleStatusAction() {
@@ -290,33 +306,70 @@ class EventDetailFragment : Fragment() {
                         binding.cbParticipateDetail.isEnabled = false
                     }
                     is EventViewModel.JoinEventState.Success -> {
-                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
+                        binding.cbParticipateDetail.isEnabled = canUserLeave()
                         Toast.makeText(context, "Estado de participación actualizado", Toast.LENGTH_SHORT).show()
                         viewModel.resetJoinState()
                     }
                     is EventViewModel.JoinEventState.Error -> {
-                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
+                        binding.cbParticipateDetail.isEnabled = canUserLeave()
                         binding.cbParticipateDetail.isChecked = !binding.cbParticipateDetail.isChecked
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         viewModel.resetJoinState()
                     }
                     else -> {
-                        binding.cbParticipateDetail.isEnabled = !isUserAdmin
+                        binding.cbParticipateDetail.isEnabled = canUserLeave()
                     }
                 }
             }
         }
-        
+
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.isParticipating.collectLatest { isParticipating ->
-                binding.cbParticipateDetail.isChecked = isParticipating
+            viewModel.expenseOpState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.RoleOpState.Success -> {
+                        Toast.makeText(context, "Operación de gasto realizada", Toast.LENGTH_SHORT).show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    is EventViewModel.RoleOpState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    else -> {}
+                }
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.participants.collectLatest { participants ->
+            viewModel.roleOpState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.RoleOpState.Success -> {
+                        Toast.makeText(context, "Rol actualizado correctamente", Toast.LENGTH_SHORT).show()
+                        viewModel.resetRoleOpState()
+                    }
+                    is EventViewModel.RoleOpState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetRoleOpState()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isParticipating.collectLatest { isParticipating ->
+                binding.cbParticipateDetail.isChecked = isParticipating
+                // Si el usuario no participa, mostramos el texto para unirse
+                binding.cbParticipateDetail.text = if (isParticipating) "Participando en este evento" else "Participar en este evento"
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            combine(viewModel.participants, viewModel.event) { participants, event ->
+                participants to event
+            }.collectLatest { (participants, event) ->
                 binding.tvParticipantCount.text = "${participants.size} participantes"
                 participantAdapter.submitList(participants)
+                
                 // Re-check admin status when participants list is updated
                 val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
                 if (userId != null) {
@@ -324,6 +377,9 @@ class EventDetailFragment : Fragment() {
                     isUserAdmin = member?.role == MemberRole.ADMIN
                     updateAdminUi()
                 }
+                
+                participantAdapter.setEventDetails(event?.createdBy, isUserAdmin)
+                roleAdapter.setAdminStatus(isUserAdmin && event?.status == "pending")
             }
         }
 
@@ -336,6 +392,10 @@ class EventDetailFragment : Fragment() {
                     binding.tvEventTitleContainer.text = it.name
                     binding.tvInfoDescription.text = it.description ?: "Sin descripción"
                     
+                    val tvDate = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoDate)
+                    val dateFormat = java.text.SimpleDateFormat("dd 'de' MMMM, yyyy", java.util.Locale.getDefault())
+                    tvDate?.text = it.startDate?.let { date -> dateFormat.format(date) } ?: getString(R.string.no_date)
+
                     val tvLocation = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoLocation)
                     tvLocation?.text = it.location ?: "Ubicación no especificada"
                     
@@ -404,6 +464,11 @@ class EventDetailFragment : Fragment() {
                                 val index = parent?.indexOfChild(it) ?: -1
                                 if (index > 0) (parent?.getChildAt(index - 1) as? TextView)?.setTextColor(colorInt)
                                 
+                                // Y para Fecha
+                                val dateView = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoDate)
+                                val dateIndex = parent?.indexOfChild(dateView) ?: -1
+                                if (dateIndex > 0) (parent?.getChildAt(dateIndex - 1) as? TextView)?.setTextColor(colorInt)
+
                                 // Lo mismo para Ubicación
                                 val locView = binding.layoutInfo.findViewById<TextView>(R.id.tvInfoLocation)
                                 val locIndex = parent?.indexOfChild(locView) ?: -1
@@ -466,6 +531,22 @@ class EventDetailFragment : Fragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.expenseOpState.collectLatest { state ->
+                when (state) {
+                    is EventViewModel.RoleOpState.Success -> {
+                        Toast.makeText(context, "Operación de gasto realizada", Toast.LENGTH_SHORT).show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    is EventViewModel.RoleOpState.Error -> {
+                        Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                        viewModel.resetExpenseOpState()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.roleOpState.collectLatest { state ->
                 if (state is EventViewModel.RoleOpState.Success) {
                     viewModel.resetRoleOpState()
@@ -517,12 +598,14 @@ class EventDetailFragment : Fragment() {
             }
         }
 
-        // Observar tareas para el Dashboard
+        // Observar tareas para el Dashboard (Deshabilitado: tabla event_tasks no existe)
+        /*
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.tasks.collectLatest { tasks ->
                 updateTaskProgress(tasks)
             }
         }
+        */
     }
 
     private fun updateTaskProgress(tasks: List<com.tuapp.eventos.domain.model.EventTask>) {
@@ -717,6 +800,10 @@ class EventDetailFragment : Fragment() {
         tvMin.text = (role.minPeople ?: 0).toString()
         tvMax.text = (role.maxPeople ?: "∞").toString()
         
+        val currentUserId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        val status = viewModel.event.value?.status ?: "pending"
+        val isEventFinished = status == "finished"
+        
         // Mostrar miembros asignados
         val membersInRole = viewModel.roleMembers.value.filter { it.roleId == role.id }
         if (membersInRole.isNotEmpty()) {
@@ -728,25 +815,52 @@ class EventDetailFragment : Fragment() {
             }.joinToString(", ")
             
             tvAssignedMembers.text = memberNames
+            
+            // Si es admin, permitir desasignar a otros clicando en el texto o con un menú
+            if (isUserAdmin && status == "pending") {
+                tvAssignedMembers.setOnClickListener {
+                    val names = membersInRole.map { member ->
+                        viewModel.participants.value.find { it.userId == member.userId }?.userName ?: "Usuario"
+                    }.toTypedArray()
+                    
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.unassign_from_role)
+                        .setItems(names) { _, which ->
+                            val memberToUnassign = membersInRole[which]
+                            viewModel.toggleRoleAssignment(role.id!!, memberToUnassign.userId, currentEventId!!, false)
+                            dialog.dismiss()
+                        }
+                        .show()
+                }
+                tvAssignedMembers.append(" (${getString(R.string.unassign_from_role)})")
+            }
         } else {
             tvLabelMembers.visibility = View.VISIBLE
             tvAssignedMembers.text = "Nadie asignado aún"
+            tvAssignedMembers.setOnClickListener(null)
         }
 
-        val currentUserId = SupabaseModule.client.auth.currentUserOrNull()?.id
         val isUserAssigned = membersInRole.any { it.userId == currentUserId }
-        
+
         btnAssign.text = if (isUserAssigned) "Desasignarme" else "Asignarme"
         btnAssign.setIconResource(if (isUserAssigned) android.R.drawable.ic_menu_close_clear_cancel else android.R.drawable.ic_input_add)
 
-        btnAssign.setOnClickListener { 
-            if (currentUserId != null && currentEventId != null) {
-                viewModel.toggleRoleAssignment(role.id!!, currentUserId, currentEventId!!, !isUserAssigned)
-                dialog.dismiss()
+        // Deshabilitar asignación si el evento ha finalizado
+        if (isEventFinished) {
+            btnAssign.isEnabled = false
+            btnAssign.alpha = 0.5f
+            btnAssign.text = if (isUserAssigned) "Asignado (Evento finalizado)" else "No asignado (Evento finalizado)"
+        } else {
+            btnAssign.isEnabled = true
+            btnAssign.alpha = 1.0f
+            btnAssign.setOnClickListener { 
+                if (currentUserId != null && currentEventId != null) {
+                    viewModel.toggleRoleAssignment(role.id!!, currentUserId, currentEventId!!, !isUserAssigned)
+                    dialog.dismiss()
+                }
             }
         }
         
-        val status = viewModel.event.value?.status ?: "pending"
         btnEdit.visibility = if (isUserAdmin && status == "pending") View.VISIBLE else View.GONE
         btnEdit.setOnClickListener {
             dialog.dismiss()
@@ -789,6 +903,8 @@ class EventDetailFragment : Fragment() {
         val tvAmount = dialogView.findViewById<TextView>(R.id.tvDialogExpenseAmount)
         val tvType = dialogView.findViewById<TextView>(R.id.tvDialogExpenseType)
         val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnCloseExpense)
+        val btnEdit = dialogView.findViewById<MaterialButton>(R.id.btnEditExpense)
+        val btnDelete = dialogView.findViewById<MaterialButton>(R.id.btnDeleteExpense)
 
         tvName.text = expense.title
         tvAmount.text = String.format(Locale.getDefault(), "%.2f€", expense.amount)
@@ -796,6 +912,40 @@ class EventDetailFragment : Fragment() {
         val tvDesc = dialogView.findViewById<TextView>(R.id.tvDialogExpenseDescription)
         tvDesc?.text = expense.description ?: "Sin descripción"
         tvDesc?.visibility = if (expense.description.isNullOrBlank()) View.GONE else View.VISIBLE
+
+        // Detalles del pago
+        val tvDetails = dialogView.findViewById<TextView>(R.id.tvDialogExpenseDetails)
+        val payer = viewModel.participants.value.find { it.userId == expense.paidByUserId }?.userName ?: "Desconocido"
+        val date = expense.incurredAt?.let { java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it) } ?: "No especificada"
+        
+        tvDetails?.text = "• Pagado por: $payer\n• Fecha: $date"
+
+        // Lógica de autorización para editar
+        val currentUserId = SupabaseModule.client.auth.currentUserOrNull()?.id
+        val canEdit = isUserAdmin || expense.createdBy == currentUserId
+        
+        btnEdit.visibility = if (canEdit) View.VISIBLE else View.GONE
+        btnEdit.setOnClickListener {
+            dialog.dismiss()
+            showEditExpenseDialog(expense)
+        }
+
+        btnDelete.visibility = if (canEdit) View.VISIBLE else View.GONE
+        btnDelete.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Eliminar Gasto")
+                .setMessage("¿Estás seguro de que quieres eliminar este gasto?")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Eliminar") { _, _ ->
+                    currentEventId?.let { eventId ->
+                        expense.id?.let { expenseId ->
+                            viewModel.deleteExpense(eventId, expenseId)
+                            dialog.dismiss()
+                        }
+                    }
+                }
+                .show()
+        }
 
         btnClose.setOnClickListener { dialog.dismiss() }
 
@@ -806,16 +956,75 @@ class EventDetailFragment : Fragment() {
         dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
+    private fun showEditExpenseDialog(expense: Expense) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_expense, null)
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+            .setView(dialogView)
+            .create()
+
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvDialogExpenseTitle)
+        tvTitle?.text = "Editar Gasto"
+        
+        val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseName)
+        val etCategory = dialogView.findViewById<AutoCompleteTextView>(R.id.etExpenseCategory)
+        val etAmount = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseAmount)
+        val etDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseDescription)
+        val btnSave = dialogView.findViewById<MaterialButton>(R.id.btnCreateExpense)
+        
+        // Ocultar campo estrategia ya que no se usa según lo pedido
+        dialogView.findViewById<View>(R.id.tilExpenseStrategy)?.visibility = View.GONE
+
+        // Rellenar datos actuales
+        etName?.setText(expense.title)
+        etAmount?.setText(expense.amount.toString())
+        etDescription?.setText(expense.description)
+        etCategory?.setText(expense.category, false)
+        
+        val categories = arrayOf("Comida", "Bebida", "Transporte", "Alojamiento", "Alquiler", "Decoración", "Entretenimiento", "Otros")
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
+        etCategory?.setAdapter(adapter)
+
+        btnSave?.text = "Actualizar Gasto"
+        btnSave?.setOnClickListener {
+            val name = etName?.text.toString()
+            val amount = etAmount?.text.toString().toDoubleOrNull() ?: 0.0
+            val category = etCategory?.text.toString()
+            val description = etDescription?.text.toString()
+
+            if (name.isNotBlank() && amount > 0 && category.isNotBlank()) {
+                val updatedExpense = expense.copy(
+                    title = name,
+                    amount = amount,
+                    category = category,
+                    description = description
+                )
+                
+                // Usamos la lógica de actualización
+                currentEventId?.let { eventId ->
+                    viewModel.updateExpense(eventId, updatedExpense)
+                }
+                dialog.dismiss()
+            } else {
+                Toast.makeText(context, "Por favor, rellena todos los campos obligatorios", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun showCreateExpenseDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_expense, null)
         val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
             .setView(dialogView)
             .create()
 
-        val categories = arrayOf("Comida", "Bebida", "Transporte", "Alojamiento", "Entretenimiento", "Otros")
+        val categories = arrayOf("Comida", "Bebida", "Transporte", "Alojamiento", "Alquiler", "Decoración", "Entretenimiento", "Otros")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
         val autoCategory = dialogView.findViewById<AutoCompleteTextView>(R.id.etExpenseCategory)
         autoCategory.setAdapter(adapter)
+
+        // Ocultar campo estrategia en creación también
+        dialogView.findViewById<View>(R.id.tilExpenseStrategy)?.visibility = View.GONE
 
         val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseName)
         val etDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etExpenseDescription)
@@ -885,7 +1094,7 @@ class EventDetailFragment : Fragment() {
             viewModel.loadRoles(id)
             viewModel.loadRoleMembers(id)
             viewModel.loadExpenses(id)
-            viewModel.loadTasks(id)
+            // viewModel.loadTasks(id) // Deshabilitado: tabla event_tasks no existe
         }
     }
 

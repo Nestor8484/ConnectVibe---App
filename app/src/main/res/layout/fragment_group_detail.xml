@@ -102,13 +102,48 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <!-- Tab 1: Eventos -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvGroupEvents"
+        <LinearLayout
+            android:id="@+id/layoutGroupEvents"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingTop="8dp"
-            tools:listitem="@layout/item_event" />
+            android:orientation="vertical">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilEventFilter"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="8dp"
+                app:boxStrokeColor="?attr/colorPrimary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:hintEnabled="false">
+
+                <AutoCompleteTextView
+                    android:id="@+id/actvEventFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    tools:ignore="LabelFor"
+                    tools:text="Pendientes" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvGroupEvents"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                tools:listitem="@layout/item_event" />
+        </LinearLayout>
 
         <!-- Tab 2: Dashboard -->
         <include

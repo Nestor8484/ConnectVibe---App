@@ -15,67 +15,91 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivMemberAvatar"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:padding="2dp"
             android:src="@drawable/ic_profile"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="#1565C0" />
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+            android:contentDescription="User Avatar"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="1dp"
+            app:tint="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/tvMemberName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
             android:textColor="@color/md_theme_onSurface"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tvMemberRole"
+            app:layout_constraintBottom_toTopOf="@+id/tvMemberEmail"
+            app:layout_constraintEnd_toStartOf="@+id/layoutBadges"
             app:layout_constraintStart_toEndOf="@id/ivMemberAvatar"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed"
             tools:text="Joan Doe" />
 
         <TextView
             android:id="@+id/tvMemberEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginTop="2dp"
             android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/tvMemberRole"
-            app:layout_constraintStart_toEndOf="@id/ivMemberAvatar"
+            app:layout_constraintEnd_toStartOf="@+id/layoutBadges"
+            app:layout_constraintStart_toStartOf="@id/tvMemberName"
             app:layout_constraintTop_toBottomOf="@id/tvMemberName"
             tools:text="joan@example.com" />
 
-        <TextView
-            android:id="@+id/tvMemberRole"
+        <LinearLayout
+            android:id="@+id/layoutBadges"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_dot_outline"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="4dp"
-            android:textColor="#1565C0"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/btnDeleteMember"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="ADMIN" />
-
-        <ImageButton
-            android:id="@+id/btnDeleteMember"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
+            android:orientation="horizontal"
+            android:gravity="end"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@color/md_theme_error" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvCreatorBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_role_tag"
+                android:backgroundTint="#E3F2FD"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/label_creator"
+                android:textColor="#1565C0"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvAdminBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_role_tag"
+                android:backgroundTint="#F1F8E9"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/label_admin"
+                android:textColor="#388E3C"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

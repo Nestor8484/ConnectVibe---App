@@ -85,6 +85,46 @@ class MemberViewModel : ViewModel() {
         _inviteState.value = InviteState.Idle
     }
 
+    private val _memberOpState = MutableStateFlow<MemberOpState>(MemberOpState.Idle)
+    val memberOpState: StateFlow<MemberOpState> = _memberOpState.asStateFlow()
+
+    fun updateMemberRole(groupId: String, userId: String, isAdmin: Boolean) {
+        viewModelScope.launch {
+            _memberOpState.value = MemberOpState.Loading
+            val result = repository.updateMemberRole(groupId, userId, isAdmin)
+            if (result.isSuccess) {
+                _memberOpState.value = MemberOpState.Success
+                loadMembers(groupId)
+            } else {
+                _memberOpState.value = MemberOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar rol")
+            }
+        }
+    }
+
+    fun removeMember(groupId: String, userId: String) {
+        viewModelScope.launch {
+            _memberOpState.value = MemberOpState.Loading
+            val result = repository.removeMember(groupId, userId)
+            if (result.isSuccess) {
+                _memberOpState.value = MemberOpState.Success
+                loadMembers(groupId)
+            } else {
+                _memberOpState.value = MemberOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar miembro")
+            }
+        }
+    }
+
+    fun resetMemberOpState() {
+        _memberOpState.value = MemberOpState.Idle
+    }
+
+    sealed class MemberOpState {
+        object Idle : MemberOpState()
+        object Loading : MemberOpState()
+        object Success : MemberOpState()
+        data class Error(val message: String) : MemberOpState()
+    }
+
     sealed class MembersState {
         object Loading : MembersState()
         data class Success(val members: List<Pair<GroupMember, Profile>>) : MembersState()

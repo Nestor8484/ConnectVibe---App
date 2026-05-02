@@ -77,7 +77,7 @@ class AddExpenseFragment : Fragment() {
     }
 
     private fun setupCategoryDropdown() {
-        val categories = listOf("Comida", "Bebida", "Transporte", "Alquiler", "Decoración", "Otros")
+        val categories = listOf("Comida", "Bebida", "Transporte", "Alojamiento", "Alquiler", "Decoración", "Entretenimiento", "Otros")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
         binding.atvCategory.setAdapter(adapter)
     }

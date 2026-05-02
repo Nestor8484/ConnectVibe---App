@@ -51,6 +51,8 @@ class PrivateEventsFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
         
+        binding.tilEventFilter.visibility = View.GONE
+        
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
         if (userId != null) {
             viewModel.loadGroups(userId)

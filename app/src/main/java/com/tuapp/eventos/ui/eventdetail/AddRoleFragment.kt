@@ -20,7 +20,14 @@ class AddRoleFragment : DialogFragment() {
     private var _binding: DialogAddRoleBinding? = null
     private val binding get() = _binding!!
     
-    private val viewModel: EventViewModel by viewModels({ requireParentFragment() })
+    private val viewModel: EventViewModel by viewModels({ 
+        // Si el fragmento es mostrado desde EventDetailFragment o uno de sus hijos
+        var parent = requireParentFragment()
+        while (parent !is EventDetailFragment && parent.parentFragment != null) {
+            parent = parent.requireParentFragment()
+        }
+        parent
+    })
     private var eventId: String? = null
     private var roleToEdit: Role? = null
     private var selectedColor: String = "#1565C0"
@@ -36,10 +43,13 @@ class AddRoleFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.9).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        dialog?.window?.apply {
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.9).toInt(),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
     }
 
     override fun onCreateView(
@@ -75,44 +85,60 @@ class AddRoleFragment : DialogFragment() {
                     setMargins(8, 8, 8, 8)
                 }
                 tag = colorStr
-                setBackgroundColor(android.graphics.Color.parseColor(colorStr))
                 setOnClickListener {
                     selectedColor = colorStr
+                    binding.tilCustomColor.visibility = View.GONE
                     updateColorSelectionUI()
                 }
             }
             binding.llColorContainer.addView(colorView)
         }
+
+        binding.cvCustomColor.setOnClickListener {
+            binding.tilCustomColor.visibility = if (binding.tilCustomColor.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            if (binding.tilCustomColor.visibility == View.VISIBLE) {
+                binding.etCustomColor.requestFocus()
+                // Si ya hay un color personalizado seleccionado (no está en la lista predef), lo ponemos
+                if (!colors.contains(selectedColor)) {
+                    binding.etCustomColor.setText(selectedColor)
+                }
+            }
+        }
+
+        binding.etCustomColor.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val hex = s.toString()
+                if (hex.startsWith("#") && (hex.length == 4 || hex.length == 7)) {
+                    try {
+                        android.graphics.Color.parseColor(hex)
+                        selectedColor = hex
+                        updateColorSelectionUI()
+                    } catch (e: Exception) {}
+                } else if (!hex.startsWith("#") && (hex.length == 3 || hex.length == 6)) {
+                    try {
+                        val formattedHex = "#$hex"
+                        android.graphics.Color.parseColor(formattedHex)
+                        selectedColor = formattedHex
+                        updateColorSelectionUI()
+                    } catch (e: Exception) {}
+                }
+            }
+        })
+
         updateColorSelectionUI()
     }
 
     private fun updateColorSelectionUI() {
+        val predefinedColors = listOf("#1565C0", "#1E88E5", "#43A047", "#E53935", "#FB8C00", "#8E24AA", "#FDD835")
+        var anyPredefinedSelected = false
+
         for (i in 0 until binding.llColorContainer.childCount) {
             val view = binding.llColorContainer.getChildAt(i)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             val colorStr = view.tag as String
-            val isSelected = selectedColor == colorStr
+            val isSelected = selectedColor.uppercase() == colorStr.uppercase()
+            if (isSelected) anyPredefinedSelected = true
             
             val drawable = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
@@ -127,6 +153,21 @@ class AddRoleFragment : DialogFragment() {
             view.scaleX = if (isSelected) 1.1f else 1.0f
             view.scaleY = if (isSelected) 1.1f else 1.0f
         }
+
+        // Si el seleccionado no es predefinido, marcamos el botón de custom
+        try {
+            binding.cvCustomColor.strokeColor = if (!anyPredefinedSelected) 
+                android.graphics.Color.parseColor(selectedColor) 
+            else 
+                android.graphics.Color.parseColor("#DDDDDD")
+        } catch (e: Exception) {
+            binding.cvCustomColor.strokeColor = android.graphics.Color.parseColor("#DDDDDD")
+        }
+        
+        binding.cvCustomColor.strokeWidth = if (!anyPredefinedSelected) 
+            (3 * resources.displayMetrics.density).toInt() 
+        else 
+            (1 * resources.displayMetrics.density).toInt()
     }
 
     private fun populateFields(role: Role) {
@@ -137,6 +178,13 @@ class AddRoleFragment : DialogFragment() {
         binding.cbIsMandatory.isChecked = role.isMandatory
         binding.acRoleIcon.setText(role.icon, false)
         selectedColor = role.color ?: "#1565C0"
+        
+        val predefinedColors = listOf("#1565C0", "#1E88E5", "#43A047", "#E53935", "#FB8C00", "#8E24AA", "#FDD835")
+        if (!predefinedColors.contains(selectedColor.uppercase())) {
+            binding.tilCustomColor.visibility = View.VISIBLE
+            binding.etCustomColor.setText(selectedColor)
+        }
+
         updateColorSelectionUI()
     }
 

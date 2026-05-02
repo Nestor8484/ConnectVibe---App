@@ -29,7 +29,8 @@
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
             android:contentDescription="User Avatar"
             app:strokeColor="?attr/colorPrimary"
-            app:strokeWidth="1dp" />
+            app:strokeWidth="1dp"
+            app:tint="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/tvParticipantName"
@@ -38,10 +39,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="8dp"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toTopOf="@+id/tvParticipantRole"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/layoutBadges"
             app:layout_constraintStart_toEndOf="@id/ivAvatar"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed"
@@ -58,6 +59,48 @@
             app:layout_constraintStart_toStartOf="@id/tvParticipantName"
             app:layout_constraintTop_toBottomOf="@id/tvParticipantName"
             tools:text="Organizer" />
+
+        <LinearLayout
+            android:id="@+id/layoutBadges"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvCreatorBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_role_tag"
+                android:backgroundTint="#E3F2FD"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/label_creator"
+                android:textColor="#1565C0"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvAdminBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_role_tag"
+                android:backgroundTint="#F1F8E9"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="@string/label_admin"
+                android:textColor="#388E3C"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

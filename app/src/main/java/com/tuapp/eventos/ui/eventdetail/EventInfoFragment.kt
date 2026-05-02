@@ -17,6 +17,7 @@ import com.tuapp.eventos.ui.events.EventViewModel
 import com.tuapp.eventos.di.SupabaseModule
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -27,7 +28,18 @@ class EventInfoFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: EventViewModel by activityViewModels()
-    private val participantAdapter = ParticipantAdapter()
+    private val participantAdapter = ParticipantAdapter(
+        onAdminPromotion = { userId, isAdmin ->
+            viewModel.event.value?.id?.let { eventId ->
+                viewModel.updateParticipantRole(eventId, userId, isAdmin)
+            }
+        },
+        onRemoveMember = { userId ->
+            viewModel.event.value?.id?.let { eventId ->
+                viewModel.removeParticipant(eventId, userId)
+            }
+        }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -67,7 +79,9 @@ class EventInfoFragment : Fragment() {
 
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.event.collectLatest { event ->
+            combine(viewModel.event, viewModel.participants) { event, participants ->
+                event to participants
+            }.collectLatest { (event, participants) ->
                 event?.let {
                     binding.tvDetailTitle.text = it.name
                     binding.tvDetailDescription.text = it.description ?: "Sin descripción"
@@ -92,8 +106,13 @@ class EventInfoFragment : Fragment() {
                     }
 
                     val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
-                    val isAdmin = it.createdBy == userId
-                    binding.btnEditEvent.visibility = if (isAdmin && it.status == "pending") View.VISIBLE else View.GONE
+                    val isOwner = it.createdBy == userId
+                    
+                    // Encontrar si el usuario actual es admin según la lista de participantes
+                    val currentMember = participants.find { p -> p.userId == userId }
+                    val isUserAdmin = currentMember?.role == MemberRole.ADMIN
+                    
+                    binding.btnEditEvent.visibility = if ((isOwner || isUserAdmin) && it.status == "pending") View.VISIBLE else View.GONE
 
                     // Aplicar colores dinámicos estilo "Roles"
                     it.color?.let { colorStr ->
@@ -134,20 +153,10 @@ class EventInfoFragment : Fragment() {
                             // Color inválido, ignorar
                         }
                     }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.participants.collectLatest { participants ->
-                participantAdapter.submitList(participants)
-                
-                val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
-                if (userId != null) {
-                    val member = participants.find { it.userId == userId }
-                    val isAdmin = member?.role == MemberRole.ADMIN
-                    val event = viewModel.event.value
-                    binding.btnEditEvent.visibility = if (isAdmin && event?.status == "pending") View.VISIBLE else View.GONE
+                    
+                    // Actualizar adaptador con creador e info de admin
+                    participantAdapter.submitList(participants)
+                    participantAdapter.setEventDetails(it.createdBy, isUserAdmin)
                 }
             }
         }

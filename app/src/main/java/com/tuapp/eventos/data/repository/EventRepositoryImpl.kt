@@ -15,10 +15,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 class EventRepositoryImpl : EventRepository {
     
@@ -157,15 +159,27 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun leaveEvent(eventId: String, userId: String): Result<Unit> {
         return try {
+            android.util.Log.d("EventRepository", "Removing user $userId from event $eventId")
+            
+            // 1. Eliminar al usuario de todos los roles que tenga asignados en este evento
+            client.from("event_role_members").delete {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId)
+                }
+            }
+            
+            // 2. Eliminar al usuario de la tabla de miembros del evento
             client.from("event_members").delete {
                 filter {
                     eq("event_id", eventId)
                     eq("user_id", userId)
                 }
             }
+            
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error leaving event: ${e.message}")
+            android.util.Log.e("EventRepository", "Error removing user from event: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -219,7 +233,9 @@ class EventRepositoryImpl : EventRepository {
                 try {
                     val obj = element.jsonObject
                     val userId = obj["user_id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                    val isAdmin = obj["is_admin"]?.jsonPrimitive?.booleanOrNull ?: false
+                    val isAdmin = obj["is_admin"]?.jsonPrimitive?.let { 
+                        it.booleanOrNull ?: (it.content == "true") || (it.content == "1")
+                    } ?: false
                     
                     // Manejar que profiles pueda venir como objeto o como lista (Join 1:1 vs 1:N)
                     val profilesElement = obj["profiles"]
@@ -247,6 +263,31 @@ class EventRepositoryImpl : EventRepository {
             Result.success(participants)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error getting participants: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateParticipantRole(eventId: String, userId: String, isAdmin: Boolean): Result<Unit> {
+        return try {
+            android.util.Log.d("EventRepository", "Updating role: event=$eventId, user=$userId, isAdmin=$isAdmin")
+            
+            // Usamos update en lugar de upsert para evitar activar múltiples políticas (INSERT y UPDATE)
+            // y para que sea más eficiente cuando ya sabemos que el registro existe.
+            client.from("event_members").update(
+                buildJsonObject {
+                    put("is_admin", isAdmin)
+                }
+            ) {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId)
+                }
+            }
+            
+            android.util.Log.d("EventRepository", "Update successful")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error updating participant role for user $userId in event $eventId: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -286,13 +327,23 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun updateRole(role: Role): Result<Unit> {
         return try {
-            client.from("event_roles").update(role) {
+            val jsonConfig = Json { encodeDefaults = false; ignoreUnknownKeys = true }
+            val roleJson = jsonConfig.encodeToJsonElement(Role.serializer(), role).jsonObject.toMutableMap()
+            
+            // Limpieza crucial para evitar errores de restricción en la DB
+            roleJson.remove("created_at")
+            
+            val finalJson = JsonObject(roleJson)
+            android.util.Log.d("EventRepository", "Updating role: $finalJson")
+
+            client.from("event_roles").update(finalJson) {
                 filter {
                     eq("id", role.id ?: "")
                 }
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error updating role: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -362,7 +413,10 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun updateEventStatus(eventId: String, status: String): Result<Unit> {
         return try {
-            client.from("events").update(mapOf("status" to status)) {
+            val data = buildJsonObject {
+                put("status", status)
+            }
+            client.from("events").update(data) {
                 filter { eq("id", eventId) }
             }
             Result.success(Unit)
@@ -424,6 +478,49 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
+    override suspend fun updateExpense(expense: Expense): Result<Unit> {
+        return try {
+            val expenseId = expense.id ?: return Result.failure(Exception("Expense ID is required for update"))
+            
+            val jsonConfig = Json { 
+                encodeDefaults = false 
+                ignoreUnknownKeys = true
+            }
+            
+            val expenseJson = jsonConfig.encodeToJsonElement(Expense.serializer(), expense).jsonObject.toMutableMap()
+            
+            // No actualizamos el ID ni la fecha de creación
+            expenseJson.remove("id")
+            expenseJson.remove("created_at")
+            
+            val finalJsonObject = JsonObject(expenseJson)
+            client.from("expenses").update(finalJsonObject) {
+                filter {
+                    eq("id", expenseId)
+                }
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Failed to update expense: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteExpense(expenseId: String): Result<Unit> {
+        return try {
+            client.from("expenses").delete {
+                filter {
+                    eq("id", expenseId)
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Failed to delete expense: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getExpenses(eventId: String): List<Expense> {
         return try {
             client.from("expenses")
@@ -440,6 +537,8 @@ class EventRepositoryImpl : EventRepository {
     }
 
     override suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask> {
+        return emptyList()
+        /* Deshabilitado: tabla event_tasks no existe
         return try {
             client.from("event_tasks")
                 .select {
@@ -452,6 +551,7 @@ class EventRepositoryImpl : EventRepository {
             android.util.Log.e("EventRepository", "Error fetching tasks: ${e.message}")
             emptyList()
         }
+        */
     }
 
     override fun getEventsByGroup(groupId: String): Flow<List<Event>> = flow {
@@ -466,6 +566,22 @@ class EventRepositoryImpl : EventRepository {
             emit(events)
         } catch (e: Exception) {
             emit(emptyList())
+        }
+    }
+
+    override suspend fun getExpensesByGroup(groupId: String): Result<List<Expense>> {
+        return try {
+            val response = client.from("expenses")
+                .select(Columns.raw("*")) {
+                    filter {
+                        eq("group_id", groupId)
+                    }
+                }
+            val expenses = response.decodeList<Expense>()
+            Result.success(expenses)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error fetching expenses by group: ${e.message}")
+            Result.failure(e)
         }
     }
 }
