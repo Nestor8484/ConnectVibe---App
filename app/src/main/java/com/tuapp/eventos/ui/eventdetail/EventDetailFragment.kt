@@ -781,13 +781,20 @@ class EventDetailFragment : Fragment() {
             // Si es admin, permitir desasignar a otros clicando en el texto o con un menú
             if (isUserAdmin && status == "pending") {
                 tvAssignedMembers.setOnClickListener {
-                    val names = membersInRole.map { member ->
-                        viewModel.participants.value.find { it.userId == member.userId }?.userName ?: "Usuario"
+                    val membersData = membersInRole.map { member ->
+                        val p = viewModel.participants.value.find { it.userId == member.userId }
+                        val name = p?.userName ?: "Usuario"
+                        val username = p?.email?.removePrefix("@") ?: ""
+                        name to username
+                    }
+                    
+                    val items = membersData.map { (name, username) ->
+                        if (username.isNotEmpty()) "$name (@$username)" else name
                     }.toTypedArray()
                     
                     MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.unassign_from_role)
-                        .setItems(names) { _, which ->
+                        .setItems(items) { _, which ->
                             val memberToUnassign = membersInRole[which]
                             viewModel.toggleRoleAssignment(role.id!!, memberToUnassign.userId, currentEventId!!, false)
                             dialog.dismiss()
