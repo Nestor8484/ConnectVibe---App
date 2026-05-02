@@ -579,8 +579,6 @@ class EventRepositoryImpl : EventRepository {
     }
 
     override suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask> {
-        return emptyList()
-        /* Deshabilitado: tabla event_tasks no existe
         return try {
             client.from("event_tasks")
                 .select {
@@ -593,7 +591,86 @@ class EventRepositoryImpl : EventRepository {
             android.util.Log.e("EventRepository", "Error fetching tasks: ${e.message}")
             emptyList()
         }
-        */
+    }
+
+    override suspend fun createTask(task: com.tuapp.eventos.domain.model.EventTask): Result<Unit> {
+        return try {
+            val jsonConfig = Json { encodeDefaults = false; ignoreUnknownKeys = true }
+            val taskJson = jsonConfig.encodeToJsonElement(com.tuapp.eventos.domain.model.EventTask.serializer(), task).jsonObject.toMutableMap()
+            taskJson.remove("id")
+            taskJson.remove("created_at")
+            
+            client.from("event_tasks").insert(JsonObject(taskJson))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateTask(task: com.tuapp.eventos.domain.model.EventTask): Result<Unit> {
+        return try {
+            val taskId = task.id ?: return Result.failure(Exception("Task ID is required"))
+            val jsonConfig = Json { encodeDefaults = false; ignoreUnknownKeys = true }
+            val taskJson = jsonConfig.encodeToJsonElement(com.tuapp.eventos.domain.model.EventTask.serializer(), task).jsonObject.toMutableMap()
+            taskJson.remove("id")
+            taskJson.remove("created_at")
+
+            client.from("event_tasks").update(JsonObject(taskJson)) {
+                filter { eq("id", taskId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): Result<Unit> {
+        return try {
+            client.from("event_tasks").delete {
+                filter { eq("id", taskId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun notifyTask(taskId: String, eventId: String, roleId: String, senderId: String, message: String): Result<Unit> {
+        return try {
+            android.util.Log.d("EventRepository", "Attempting to notify task: taskId=$taskId, roleId=$roleId")
+            
+            // 1. Obtener usuarios asignados al rol en este evento
+            val roleMembers = client.from("event_role_members")
+                .select {
+                    filter {
+                        eq("event_id", eventId)
+                        eq("role_id", roleId)
+                    }
+                }.decodeList<EventRoleMember>()
+
+            if (roleMembers.isEmpty()) {
+                android.util.Log.w("EventRepository", "No users assigned to role $roleId")
+                return Result.failure(Exception("No hay usuarios asignados a este rol para notificar"))
+            }
+
+            // 2. Crear notificaciones para cada usuario
+            val notifications = roleMembers.map { member ->
+                buildJsonObject {
+                    put("task_id", taskId)
+                    put("receiver_id", member.userId)
+                    put("sender_id", senderId)
+                    put("message", message)
+                    put("status", "pending")
+                }
+            }
+
+            client.from("notifications_event_tasks").insert(notifications)
+            android.util.Log.d("EventRepository", "Task notifications sent successfully to ${roleMembers.size} users")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("EventRepository", "Error in notifyTask: ${e.message}", e)
+            Result.failure(e)
+        }
     }
 
     override fun getEventsByGroup(groupId: String): Flow<List<Event>> = flow {
@@ -638,16 +715,33 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun getExpensesByGroup(groupId: String): Result<List<Expense>> {
         return try {
+            android.util.Log.d("EventRepo_FIX", "Loading expenses for group: $groupId")
+            // Unimos con la tabla events para filtrar por group_id
+            // IMPORTANTE: Para filtrar por una tabla unida, usamos la sintaxis "tabla.columna"
             val response = client.from("expenses")
-                .select(Columns.raw("*")) {
+                .select(Columns.raw("*, events!inner(group_id)")) {
                     filter {
-                        eq("group_id", groupId)
+                        // Forzamos el calificador de tabla para evitar el error de columna no encontrada
+                        eq("events.group_id", groupId)
                     }
                 }
-            val expenses = response.decodeList<Expense>()
+            
+            android.util.Log.d("EventRepo_FIX", "Group expenses raw data: ${response.data}")
+            
+            val jsonElement = Json.parseToJsonElement(response.data)
+            if (jsonElement !is kotlinx.serialization.json.JsonArray) {
+                return Result.success(emptyList())
+            }
+
+            val expenses = jsonElement.map { element ->
+                val obj = element.jsonObject.filterKeys { it != "events" }
+                Json.decodeFromJsonElement(Expense.serializer(), JsonObject(obj))
+            }
+
+            android.util.Log.d("EventRepo_FIX", "Successfully decoded ${expenses.size} expenses")
             Result.success(expenses)
         } catch (e: Exception) {
-            android.util.Log.e("EventRepository", "Error fetching expenses by group: ${e.message}")
+            android.util.Log.e("EventRepo_FIX", "Error in getExpensesByGroup: ${e.message}", e)
             Result.failure(e)
         }
     }

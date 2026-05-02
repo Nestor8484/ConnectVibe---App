@@ -73,6 +73,13 @@ class EventDetailFragment : Fragment() {
         showExpenseDetailDialog(expense)
     }
 
+    private val taskAdapter = TaskAdapter(
+        onTaskClick = { task -> showTaskDetailDialog(task) },
+        onTaskStatusChange = { task, isCompleted ->
+            viewModel.updateTask(task.copy(isCompleted = isCompleted))
+        }
+    )
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -113,8 +120,13 @@ class EventDetailFragment : Fragment() {
         }
 
         binding.fabAddRole.setOnClickListener {
-            currentEventId?.let { id ->
-                AddRoleFragment.newInstance(id).show(childFragmentManager, "AddRoleFragment")
+            val selectedTab = binding.tabLayout.selectedTabPosition
+            if (selectedTab == 0) {
+                currentEventId?.let { id ->
+                    AddRoleFragment.newInstance(id).show(childFragmentManager, "AddRoleFragment")
+                }
+            } else if (selectedTab == 2) {
+                showCreateTaskDialog()
             }
         }
 
@@ -160,7 +172,7 @@ class EventDetailFragment : Fragment() {
         val status = currentEvent?.status ?: "pending"
         val selectedTab = binding.tabLayout.selectedTabPosition
         
-        binding.fabAddRole.visibility = if (isUserAdmin && status == "pending" && selectedTab == 0) View.VISIBLE else View.GONE
+        binding.fabAddRole.visibility = if (isUserAdmin && status == "pending" && (selectedTab == 0 || selectedTab == 2)) View.VISIBLE else View.GONE
         binding.fabAddExpense.visibility = if (selectedTab == 1) View.VISIBLE else View.GONE
         
         // Habilitar/Deshabilitar botón de editar evento
@@ -506,6 +518,24 @@ class EventDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.roles.collectLatest { roles ->
                 roleAdapter.submitList(roles)
+                taskAdapter.setRoles(roles)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.tasks.collectLatest { tasks ->
+                taskAdapter.submitList(tasks)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.taskOpState.collectLatest { state ->
+                if (state is EventViewModel.RoleOpState.Success) {
+                    viewModel.resetTaskOpState()
+                } else if (state is EventViewModel.RoleOpState.Error) {
+                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    viewModel.resetTaskOpState()
+                }
             }
         }
 
@@ -706,6 +736,7 @@ class EventDetailFragment : Fragment() {
         binding.tabLayout.removeAllTabs()
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_roles)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_expenses)))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Tareas"))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText(getString(R.string.tab_dashboard)))
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Info"))
 
@@ -718,16 +749,17 @@ class EventDetailFragment : Fragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
 
-        // Seleccionar tab de Información por defecto (index 3)
-        binding.tabLayout.getTabAt(3)?.select()
-        updateVisibility(3)
+        // Seleccionar tab de Información por defecto (index 4)
+        binding.tabLayout.getTabAt(4)?.select()
+        updateVisibility(4)
     }
 
     private fun updateVisibility(position: Int) {
         binding.rvRoles.visibility = if (position == 0) View.VISIBLE else View.GONE
         binding.rvExpenses.visibility = if (position == 1) View.VISIBLE else View.GONE
-        binding.layoutDashboard.visibility = if (position == 2) View.VISIBLE else View.GONE
-        binding.layoutInfo.visibility = if (position == 3) View.VISIBLE else View.GONE
+        binding.rvTasks.visibility = if (position == 2) View.VISIBLE else View.GONE
+        binding.layoutDashboard.visibility = if (position == 3) View.VISIBLE else View.GONE
+        binding.layoutInfo.visibility = if (position == 4) View.VISIBLE else View.GONE
     }
 
     private fun toggleChart() {
@@ -882,6 +914,104 @@ class EventDetailFragment : Fragment() {
                 }
             }
             .show()
+    }
+
+    private fun showCreateTaskDialog() {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_task, null)
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+            .setView(dialogView)
+            .create()
+
+        // Aplicar color del evento
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let { cStr ->
+            try {
+                val colorInt = android.graphics.Color.parseColor(cStr)
+                val card = dialogView as? com.google.android.material.card.MaterialCardView
+                card?.strokeColor = colorInt
+                card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                dialogView.findViewById<TextView>(R.id.tvDialogTaskTitle)?.setTextColor(colorInt)
+                dialogView.findViewById<MaterialButton>(R.id.btnCreateTask)?.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+            } catch (e: Exception) {}
+        }
+
+        val etTitle = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etTaskTitle)
+        val etDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etTaskDescription)
+        val acRole = dialogView.findViewById<AutoCompleteTextView>(R.id.acTaskRole)
+        val btnCreate = dialogView.findViewById<MaterialButton>(R.id.btnCreateTask)
+
+        // Configurar roles
+        val roles = viewModel.roles.value
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, roles.map { it.name })
+        acRole.setAdapter(adapter)
+
+        btnCreate.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+            val description = etDescription.text.toString().trim()
+            val roleName = acRole.text.toString()
+            val selectedRole = roles.find { it.name == roleName }
+
+            if (title.isBlank() || selectedRole == null) {
+                Toast.makeText(context, "Título y Rol son obligatorios", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val task = com.tuapp.eventos.domain.model.EventTask(
+                eventId = currentEventId!!,
+                roleId = selectedRole.id!!,
+                title = title,
+                description = if (description.isEmpty()) null else description
+            )
+
+            viewModel.addTask(task)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showTaskDetailDialog(task: com.tuapp.eventos.domain.model.EventTask) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_task_detail, null)
+        val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
+            .setView(dialogView)
+            .create()
+
+        val role = viewModel.roles.value.find { it.id == task.roleId }
+        val roleColorStr = role?.color ?: "#1565C0"
+        
+        try {
+            val colorInt = android.graphics.Color.parseColor(roleColorStr)
+            val card = dialogView as? com.google.android.material.card.MaterialCardView
+            card?.strokeColor = colorInt
+            card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+            
+            dialogView.findViewById<TextView>(R.id.tvDialogTaskName)?.setTextColor(colorInt)
+            dialogView.findViewById<TextView>(R.id.tvDialogTaskRole)?.let { 
+                it.setTextColor(colorInt)
+                (it.background as? android.graphics.drawable.GradientDrawable)?.setStroke(2, colorInt)
+            }
+            dialogView.findViewById<MaterialButton>(R.id.btnNotifyTask)?.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+        } catch (e: Exception) {}
+
+        dialogView.findViewById<TextView>(R.id.tvDialogTaskName).text = task.title
+        dialogView.findViewById<TextView>(R.id.tvDialogTaskRole).text = role?.name ?: "Sin rol"
+        dialogView.findViewById<TextView>(R.id.tvDialogTaskDescription).text = task.description ?: "Sin descripción"
+
+        dialogView.findViewById<MaterialButton>(R.id.btnNotifyTask).setOnClickListener {
+            viewModel.notifyTask(task)
+            dialog.dismiss()
+        }
+
+        val btnDelete = dialogView.findViewById<MaterialButton>(R.id.btnDeleteTask)
+        btnDelete.visibility = if (isUserAdmin) View.VISIBLE else View.GONE
+        btnDelete.setOnClickListener {
+            viewModel.deleteTask(task.id!!, task.eventId)
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<MaterialButton>(R.id.btnCloseTask).setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
     }
 
     private fun showExpenseDetailDialog(expense: Expense) {
@@ -1137,6 +1267,10 @@ class EventDetailFragment : Fragment() {
             layoutManager = LinearLayoutManager(context)
             adapter = expenseAdapter
         }
+        binding.rvTasks.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = taskAdapter
+        }
         binding.rvParticipantsDetail.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = participantAdapter
@@ -1150,7 +1284,7 @@ class EventDetailFragment : Fragment() {
             viewModel.loadRoles(id)
             viewModel.loadRoleMembers(id)
             viewModel.loadExpenses(id)
-            // viewModel.loadTasks(id) // Deshabilitado: tabla event_tasks no existe
+            viewModel.loadTasks(id)
         }
     }
 

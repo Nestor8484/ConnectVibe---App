@@ -34,7 +34,14 @@ interface EventRepository {
     suspend fun updateExpense(expense: Expense): Result<Unit>
     suspend fun deleteExpense(expenseId: String): Result<Unit>
     suspend fun getExpenses(eventId: String): List<Expense>
+    
+    // Tasks
     suspend fun getTasks(eventId: String): List<com.tuapp.eventos.domain.model.EventTask>
+    suspend fun createTask(task: com.tuapp.eventos.domain.model.EventTask): Result<Unit>
+    suspend fun updateTask(task: com.tuapp.eventos.domain.model.EventTask): Result<Unit>
+    suspend fun deleteTask(taskId: String): Result<Unit>
+    suspend fun notifyTask(taskId: String, eventId: String, roleId: String, senderId: String, message: String): Result<Unit>
+
     fun getEventsByGroup(groupId: String): Flow<List<Event>>
     suspend fun getExpensesByGroup(groupId: String): Result<List<Expense>>
 }

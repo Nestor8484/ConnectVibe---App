@@ -4,10 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="0dp">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -15,47 +18,42 @@
         android:padding="16dp">
 
         <CheckBox
-            android:id="@+id/cbTask"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/cbTaskStatus"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:contentDescription="Mark as completed" />
+            android:buttonTint="?attr/colorPrimary" />
 
         <TextView
             android:id="@+id/tvTaskTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:textSize="18sp"
-            android:textColor="@color/md_theme_onSurface"
+            tools:text="Preparar lista de invitados"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="17sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/cbTask"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Buy drinks for the party" />
+            app:layout_constraintStart_toEndOf="@id/cbTaskStatus"
+            app:layout_constraintTop_toTopOf="@id/cbTaskStatus"
+            app:layout_constraintBottom_toBottomOf="@id/cbTaskStatus"/>
 
         <TextView
-            android:id="@+id/tvTaskDeadline"
+            android:id="@+id/tvRoleTag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="@color/md_theme_error"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_dot_outline"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            tools:text="Logística"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="12sp"
+            android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/tvTaskTitle"
-            app:layout_constraintTop_toBottomOf="@id/tvTaskTitle"
-            tools:text="Deadline: Today, 18:00" />
-
-        <ImageView
-            android:id="@+id/ivReminder"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_lock_idle_alarm"
-            app:tint="@color/md_theme_onSurfaceVariant"
-            app:layout_constraintBottom_toBottomOf="@id/tvTaskDeadline"
-            app:layout_constraintStart_toEndOf="@id/tvTaskDeadline"
-            app:layout_constraintTop_toTopOf="@id/tvTaskDeadline"
-            android:contentDescription="Reminder set" />
+            app:layout_constraintTop_toBottomOf="@id/cbTaskStatus"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

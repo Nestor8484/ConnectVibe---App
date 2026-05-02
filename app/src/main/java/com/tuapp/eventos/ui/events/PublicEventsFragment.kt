@@ -88,14 +88,15 @@ class PublicEventsFragment : Fragment() {
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, options)
         binding.actvEventFilter.setAdapter(adapter)
         
-        // Mantener la selección actual o poner Pendientes por defecto
+        // Por defecto mostrar Todos
         val currentText = binding.actvEventFilter.text.toString()
         if (currentText.isEmpty() || !options.contains(currentText)) {
-            binding.actvEventFilter.setText(options[1], false)
+            binding.actvEventFilter.setText(options[0], false)
         }
 
-        binding.actvEventFilter.setOnItemClickListener { _, _, position, _ ->
-            filterEvents(options[position])
+        binding.actvEventFilter.setOnItemClickListener { parent, _, position, _ ->
+            val selection = parent.getItemAtPosition(position) as String
+            filterEvents(selection)
         }
     }
 

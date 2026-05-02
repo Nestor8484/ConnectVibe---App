@@ -198,13 +198,71 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    private val _taskOpState = MutableStateFlow<RoleOpState>(RoleOpState.Idle)
+    val taskOpState: StateFlow<RoleOpState> = _taskOpState.asStateFlow()
+
     fun loadTasks(eventId: String) {
-        /* Deshabilitado: tabla event_tasks no existe
         viewModelScope.launch {
             val result = repository.getTasks(eventId)
             _tasks.value = result
         }
-        */
+    }
+
+    fun addTask(task: com.tuapp.eventos.domain.model.EventTask) {
+        viewModelScope.launch {
+            _taskOpState.value = RoleOpState.Loading
+            val result = repository.createTask(task)
+            if (result.isSuccess) {
+                _taskOpState.value = RoleOpState.Success
+                loadTasks(task.eventId)
+            } else {
+                _taskOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al crear tarea")
+            }
+        }
+    }
+
+    fun updateTask(task: com.tuapp.eventos.domain.model.EventTask) {
+        viewModelScope.launch {
+            _taskOpState.value = RoleOpState.Loading
+            val result = repository.updateTask(task)
+            if (result.isSuccess) {
+                _taskOpState.value = RoleOpState.Success
+                loadTasks(task.eventId)
+            } else {
+                _taskOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar tarea")
+            }
+        }
+    }
+
+    fun deleteTask(taskId: String, eventId: String) {
+        viewModelScope.launch {
+            _taskOpState.value = RoleOpState.Loading
+            val result = repository.deleteTask(taskId)
+            if (result.isSuccess) {
+                _taskOpState.value = RoleOpState.Success
+                loadTasks(eventId)
+            } else {
+                _taskOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar tarea")
+            }
+        }
+    }
+
+    fun notifyTask(task: com.tuapp.eventos.domain.model.EventTask) {
+        val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: return
+        viewModelScope.launch {
+            _taskOpState.value = RoleOpState.Loading
+            val message = "Nueva notificación para la tarea: ${task.title}"
+            val result = repository.notifyTask(task.id!!, task.eventId, task.roleId, userId, message)
+            if (result.isSuccess) {
+                _taskOpState.value = RoleOpState.Success
+            } else {
+                _taskOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al enviar notificación")
+            }
+        }
+    }
+
+    fun resetTaskOpState() {
+        _taskOpState.value = RoleOpState.Idle
     }
 
     fun addExpense(eventId: String, expense: Expense) {

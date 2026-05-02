@@ -52,10 +52,10 @@ class NotificationsFragment : Fragment() {
                 viewModel.acceptInvitation(notification, userId)
             },
             onDecline = { notification ->
-                viewModel.declineInvitation(notification.id ?: "", userId)
+                viewModel.deleteNotification(notification, userId)
             },
             onDelete = { notification ->
-                viewModel.deleteNotification(notification.id ?: "", userId)
+                viewModel.deleteNotification(notification, userId)
             }
         )
         binding.rvNotifications.apply {

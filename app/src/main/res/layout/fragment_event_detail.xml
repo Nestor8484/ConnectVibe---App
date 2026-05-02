@@ -318,6 +318,16 @@
                     android:visibility="gone"
                     tools:listitem="@layout/item_expense" />
 
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:padding="8dp"
+                    android:paddingBottom="120dp"
+                    android:visibility="gone"
+                    tools:listitem="@layout/item_task" />
+
                 <ScrollView
                     android:id="@+id/layoutDashboard"
                     android:layout_width="match_parent"

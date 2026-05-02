@@ -11,11 +11,29 @@ data class Notification(
     val id: String? = null,
     val receiver_id: String,
     val sender_id: String,
-    val group_id: String,
-    val type: String = "group_invitation",
-    val message: String? = null,
-    val status: String = "pending",
+    val type: String = "group_invitation", // "group_invitation", "task_reminder"
+    
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val created_at: String? = null
+    val group_id: String? = null,
+    
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val task_id: String? = null,
+    
+    val message: String? = null,
+    val status: String = "pending",
+    
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val created_at: String? = null,
+
+    // UI helper fields (not always in DB)
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val group_name: String? = null,
+    
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val task_title: String? = null
 )

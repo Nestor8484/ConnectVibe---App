@@ -45,24 +45,29 @@ class NotificationViewModel : ViewModel() {
         if (result.isSuccess) {
             val notifications = result.getOrDefault(emptyList())
             _notificationsState.value = NotificationsState.Success(notifications)
-            _hasPendingNotifications.value = notifications.any { it.first.status == "pending" }
+            _hasPendingNotifications.value = notifications.any { it.status == "pending" }
         } else {
             _notificationsState.value = NotificationsState.Error(result.exceptionOrNull()?.message ?: "Error al cargar notificaciones")
         }
     }
 
     private fun setupRealtime(userId: String) {
-        val channel = SupabaseModule.client.realtime.channel("notifications-changes")
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+        // Invitaciones
+        val channelInv = SupabaseModule.client.realtime.channel("invitations-changes")
+        channelInv.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "notifications"
-        }.onEach { action ->
-            android.util.Log.d("NotificationViewModel", "Realtime action detected: $action")
-            refreshNotifications(userId)
-        }.launchIn(viewModelScope)
+        }.onEach { refreshNotifications(userId) }.launchIn(viewModelScope)
+
+        // Tareas
+        val channelTasks = SupabaseModule.client.realtime.channel("tasks-notif-changes")
+        channelTasks.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "notifications_event_tasks"
+        }.onEach { refreshNotifications(userId) }.launchIn(viewModelScope)
 
         viewModelScope.launch {
             try {
-                channel.subscribe()
+                channelInv.subscribe()
+                channelTasks.subscribe()
             } catch (e: Exception) {
                 android.util.Log.e("NotificationViewModel", "Error subscribing to realtime: ${e.message}")
             }
@@ -73,24 +78,18 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             val result = repository.acceptInvitation(notification)
             if (result.isSuccess) {
-                // El refresco vendrá por Realtime o podemos forzarlo
                 refreshNotifications(userId)
             }
         }
     }
 
-    fun declineInvitation(notificationId: String, userId: String) {
+    fun deleteNotification(notification: Notification, userId: String) {
         viewModelScope.launch {
-            val result = repository.declineInvitation(notificationId)
-            if (result.isSuccess) {
-                refreshNotifications(userId)
+            val result = if (notification.type == "task_reminder") {
+                repository.deleteTaskNotification(notification.id ?: "")
+            } else {
+                repository.deleteNotification(notification.id ?: "")
             }
-        }
-    }
-
-    fun deleteNotification(notificationId: String, userId: String) {
-        viewModelScope.launch {
-            val result = repository.deleteNotification(notificationId)
             if (result.isSuccess) {
                 refreshNotifications(userId)
             }
@@ -99,7 +98,7 @@ class NotificationViewModel : ViewModel() {
 
     sealed class NotificationsState {
         object Loading : NotificationsState()
-        data class Success(val notifications: List<Pair<Notification, Group>>) : NotificationsState()
+        data class Success(val notifications: List<Notification>) : NotificationsState()
         data class Error(val message: String) : NotificationsState()
     }
 }

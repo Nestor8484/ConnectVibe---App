@@ -245,6 +245,9 @@ class EditEventDialogFragment : DialogFragment() {
         binding.etDescription.setText(event.description)
         binding.etLocation.setText(event.location)
         binding.acEventIcon.setText(event.icon, false)
+        // Clear filter to show all options
+        (binding.acEventIcon.adapter as? ArrayAdapter<*>)?.filter?.filter(null)
+
         selectedColor = event.color ?: "#1565C0"
         event.startDate?.let {
             startDateTime.time = it

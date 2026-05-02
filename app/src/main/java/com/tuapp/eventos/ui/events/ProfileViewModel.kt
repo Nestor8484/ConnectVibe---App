@@ -57,7 +57,7 @@ class ProfileViewModel : ViewModel() {
             val result = groupRepository.getNotifications(userId)
             if (result.isSuccess) {
                 val notifications = result.getOrThrow()
-                _pendingNotificationsCount.value = notifications.count { it.first.status == "pending" }
+                _pendingNotificationsCount.value = notifications.count { it.status == "pending" }
             }
         }
     }

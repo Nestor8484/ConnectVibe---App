@@ -316,51 +316,98 @@ class GroupRepository {
         }
     }
 
-    suspend fun getNotifications(userId: String): Result<List<Pair<Notification, Group>>> {
+    suspend fun getNotifications(userId: String): Result<List<Notification>> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d("GroupRepository", "Fetching notifications for user: $userId")
-                val response = client.from("notifications")
-                    .select(Columns.raw("*, groups(*)")) {
+                Log.d("GroupRepo_FIX", "Fetching ALL notifications for user: $userId")
+                
+                // 1. Invitaciones a grupos
+                val invitationsResponse = client.from("notifications")
+                    .select(Columns.raw("*, groups(name)")) {
                         filter {
                             eq("receiver_id", userId)
                             eq("status", "pending")
                         }
                     }
                 
-                val resultList = mutableListOf<Pair<Notification, Group>>()
-                val jsonArray = json.parseToJsonElement(response.data)
+                val invitations = mutableListOf<Notification>()
+                val invArray = json.parseToJsonElement(invitationsResponse.data).jsonArray
+                Log.d("GroupRepo_FIX", "Found ${invArray.size} raw invitations")
                 
-                if (jsonArray is kotlinx.serialization.json.JsonArray) {
-                    for (element in jsonArray) {
-                        try {
-                            val jsonObj = element.jsonObject
-                            // Extraer ID de forma segura sin que falle la decodificación si es número
-                            val idStr = jsonObj["id"]?.let { 
-                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() 
-                            }
-                            
-                            // Decodificar el resto (evitamos conflicto con el ID si es numérico)
-                            val notification = json.decodeFromJsonElement<Notification>(
-                                kotlinx.serialization.json.JsonObject(jsonObj.filterKeys { it != "id" })
-                            ).copy(id = idStr)
-                            
-                            val groupElement = jsonObj["groups"]
-                            if (groupElement != null) {
-                                val group = json.decodeFromJsonElement<Group>(groupElement)
-                                resultList.add(notification to group)
-                            }
-                        } catch (e: Exception) {
-                            Log.e("GroupRepository", "Error decoding notification: ${e.message}")
+                for (element in invArray) {
+                    try {
+                        val obj = element.jsonObject
+                        val idStr = obj["id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() }
+                        
+                        val groupsElement = obj["groups"]
+                        val groupObj = when (groupsElement) {
+                            is kotlinx.serialization.json.JsonObject -> groupsElement
+                            is kotlinx.serialization.json.JsonArray -> if (groupsElement.isNotEmpty()) groupsElement[0].jsonObject else null
+                            else -> null
+                        }
+                        val groupName = groupObj?.get("name")?.jsonPrimitive?.contentOrNull
+
+                        val notif = json.decodeFromJsonElement<Notification>(
+                            kotlinx.serialization.json.JsonObject(obj.filterKeys { it != "id" && it != "groups" })
+                        ).copy(id = idStr, group_name = groupName, type = "group_invitation")
+                        invitations.add(notif)
+                    } catch (e: Exception) { Log.e("GroupRepo_FIX", "Error decoding invitation: ${e.message}") }
+                }
+
+                // 2. Notificaciones de tareas
+                val taskNotifResponse = client.from("notifications_event_tasks")
+                    .select(Columns.raw("*, event_tasks(title)")) {
+                        filter {
+                            eq("receiver_id", userId)
+                            eq("status", "pending")
                         }
                     }
+                
+                val taskNotifications = mutableListOf<Notification>()
+                val taskArray = json.parseToJsonElement(taskNotifResponse.data).jsonArray
+                Log.d("GroupRepo_FIX", "Found ${taskArray.size} raw task alerts")
+                
+                for (element in taskArray) {
+                    try {
+                        val obj = element.jsonObject
+                        val idStr = obj["id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() }
+                        
+                        val tasksElement = obj["event_tasks"]
+                        val taskObj = when (tasksElement) {
+                            is kotlinx.serialization.json.JsonObject -> tasksElement
+                            is kotlinx.serialization.json.JsonArray -> if (tasksElement.isNotEmpty()) tasksElement[0].jsonObject else null
+                            else -> null
+                        }
+                        val taskTitle = taskObj?.get("title")?.jsonPrimitive?.contentOrNull
+
+                        val notif = json.decodeFromJsonElement<Notification>(
+                            kotlinx.serialization.json.JsonObject(obj.filterKeys { it != "id" && it != "event_tasks" })
+                        ).copy(id = idStr, task_title = taskTitle, type = "task_reminder")
+                        taskNotifications.add(notif)
+                    } catch (e: Exception) { Log.e("GroupRepo_FIX", "Error decoding task alert: ${e.message}") }
                 }
-                Log.d("GroupRepository", "Found ${resultList.size} notifications")
-                Result.success(resultList)
+
+                val all = (invitations + taskNotifications).sortedByDescending { it.created_at }
+                Log.d("GroupRepo_FIX", "Total notifications to UI: ${all.size}")
+                Result.success(all)
             } catch (e: Exception) {
-                Log.e("GroupRepository", "Error al obtener notificaciones: ${e.message}")
+                Log.e("GroupRepo_FIX", "Fatal error loading notifications: ${e.message}")
                 Result.failure(e)
             }
+        }
+    }
+
+    suspend fun deleteTaskNotification(notificationId: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val numericId = notificationId.toLongOrNull()
+                client.from("notifications_event_tasks").delete {
+                    filter {
+                        if (numericId != null) eq("id", numericId) else eq("id", notificationId)
+                    }
+                }
+                Result.success(Unit)
+            } catch (e: Exception) { Result.failure(e) }
         }
     }
 
@@ -371,8 +418,9 @@ class GroupRepository {
                 
                 // 1. Intentar añadir al grupo (si ya es miembro, ignoramos el error de inserción)
                 try {
+                    val groupId = notification.group_id ?: throw Exception("ID de grupo no encontrado en la notificación")
                     val member = GroupMember(
-                        group_id = notification.group_id,
+                        group_id = groupId,
                         user_id = notification.receiver_id,
                         status = "active",
                         is_admin = false

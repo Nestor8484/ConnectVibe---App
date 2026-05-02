@@ -228,7 +228,9 @@ class CreateEventFragment : Fragment() {
         val icons = arrayOf("Evento General", "Fiesta", "Boda", "Deportes", "Trabajo", "Educación", "Viaje", "Comida", "Salud")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, icons)
         binding.acEventIcon.setAdapter(adapter)
-        binding.acEventIcon.setText("Evento General", false)
+        if (binding.acEventIcon.text.isNullOrEmpty()) {
+            binding.acEventIcon.setText("Evento General", false)
+        }
     }
 
     private fun setupEventColorSelection() {
@@ -323,6 +325,9 @@ class CreateEventFragment : Fragment() {
                     binding.switchPublic.isChecked = it.visibility == "public"
                     selectedGroupId = it.groupId
                     binding.acEventIcon.setText(it.icon ?: "Evento General", false)
+                    // Clear filter to show all options in dropdown
+                    (binding.acEventIcon.adapter as? ArrayAdapter<*>)?.filter?.filter(null)
+                    
                     selectedEventColor = it.color ?: "#1565C0"
                     it.startDate?.let { date ->
                         startDateTime.time = date
@@ -416,6 +421,14 @@ class CreateEventFragment : Fragment() {
                 val names = groups.map { it.name }
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
                 binding.actvGroupSelector.setAdapter(adapter)
+                
+                // If there's a selected group name, set it without filtering
+                selectedGroupId?.let { id ->
+                    groups.find { it.id == id }?.let { group ->
+                        binding.actvGroupSelector.setText(group.name, false)
+                        adapter.filter.filter(null)
+                    }
+                }
             }
         }
 
