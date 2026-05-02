@@ -628,9 +628,13 @@ class EventDetailFragment : Fragment() {
             val legendItem = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(4, 4, 4, 4)
-                val params = android.widget.GridLayout.LayoutParams()
-                params.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                setPadding(8, 6, 8, 6)
+                
+                val params = android.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(0, 0, 0, 0)
+                }
                 layoutParams = params
                 
                 val colorView = View(context).apply {
@@ -931,6 +935,31 @@ class EventDetailFragment : Fragment() {
             .setView(dialogView)
             .create()
 
+        // Aplicar color del evento
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let { cStr ->
+            try {
+                val colorInt = android.graphics.Color.parseColor(cStr)
+                val card = dialogView as? com.google.android.material.card.MaterialCardView
+                card?.strokeColor = colorInt
+                card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                dialogView.findViewById<TextView>(R.id.tvDialogExpenseTitle)?.setTextColor(colorInt)
+                dialogView.findViewById<MaterialButton>(R.id.btnCreateExpense)?.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                
+                val container = dialogView.findViewById<TextView>(R.id.tvDialogExpenseTitle).parent as? ViewGroup
+                container?.let {
+                    for (i in 0 until it.childCount) {
+                        val child = it.getChildAt(i)
+                        if (child is com.google.android.material.textfield.TextInputLayout) {
+                            child.boxStrokeColor = colorInt
+                            child.defaultHintTextColor = android.content.res.ColorStateList.valueOf(colorInt)
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
+
         val tvTitle = dialogView.findViewById<TextView>(R.id.tvDialogExpenseTitle)
         tvTitle?.text = "Editar Gasto"
         
@@ -986,6 +1015,32 @@ class EventDetailFragment : Fragment() {
         val dialog = MaterialAlertDialogBuilder(requireContext(), R.style.Theme_ConnectVibe_Dialog)
             .setView(dialogView)
             .create()
+
+        // Aplicar color del evento
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let { cStr ->
+            try {
+                val colorInt = android.graphics.Color.parseColor(cStr)
+                val card = dialogView as? com.google.android.material.card.MaterialCardView
+                card?.strokeColor = colorInt
+                card?.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                dialogView.findViewById<TextView>(R.id.tvDialogExpenseTitle)?.setTextColor(colorInt)
+                dialogView.findViewById<MaterialButton>(R.id.btnCreateExpense)?.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                
+                // Aplicar a los TextInputLayouts
+                val container = dialogView.findViewById<LinearLayout>(R.id.tvDialogExpenseTitle).parent as? ViewGroup
+                container?.let {
+                    for (i in 0 until it.childCount) {
+                        val child = it.getChildAt(i)
+                        if (child is com.google.android.material.textfield.TextInputLayout) {
+                            child.boxStrokeColor = colorInt
+                            child.defaultHintTextColor = android.content.res.ColorStateList.valueOf(colorInt)
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
 
         val categories = arrayOf("Comida", "Bebida", "Transporte", "Alojamiento", "Alquiler", "Decoración", "Entretenimiento", "Otros")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)

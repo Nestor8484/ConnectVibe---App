@@ -68,12 +68,50 @@ class AddRoleFragment : DialogFragment() {
         binding.tvDialogTitle.text = if (roleToEdit == null) "Añadir Rol" else "Editar Rol"
         binding.btnConfirm.text = if (roleToEdit == null) "Crear" else "Guardar"
 
+        applyEventColor()
         setupIconDropdown()
         setupColorSelection()
         setupButtons()
         observeViewModel()
         
         roleToEdit?.let { populateFields(it) }
+    }
+
+    private fun applyEventColor() {
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let {
+            try {
+                val colorInt = android.graphics.Color.parseColor(it)
+                binding.root.strokeColor = colorInt
+                binding.root.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                binding.tvDialogTitle.setTextColor(colorInt)
+                binding.btnConfirm.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                binding.cbIsMandatory.buttonTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                
+                // Aplicar a todos los TextInputLayouts del diálogo
+                val parent = binding.tvDialogTitle.parent as? ViewGroup
+                parent?.let { container ->
+                    for (i in 0 until container.childCount) {
+                        val child = container.getChildAt(i)
+                        if (child is com.google.android.material.textfield.TextInputLayout) {
+                            child.boxStrokeColor = colorInt
+                            child.setEndIconTintList(android.content.res.ColorStateList.valueOf(colorInt))
+                            child.defaultHintTextColor = android.content.res.ColorStateList.valueOf(colorInt)
+                        } else if (child is ViewGroup) {
+                            // Buscar dentro de LinearLayouts horizontales (como el de Min/Max)
+                            for (j in 0 until child.childCount) {
+                                val subChild = child.getChildAt(j)
+                                if (subChild is com.google.android.material.textfield.TextInputLayout) {
+                                    subChild.boxStrokeColor = colorInt
+                                    subChild.defaultHintTextColor = android.content.res.ColorStateList.valueOf(colorInt)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
     }
 
     private fun setupColorSelection() {

@@ -201,9 +201,10 @@ class GroupDetailFragment : Fragment() {
         binding.includeDashboard.tvGroupEventCount.text = eventsInMonth.size.toString()
         eventStatusAdapter.submitList(eventsInMonth)
 
-        // Filtrar gastos por el mes (usando la fecha del gasto si existe, o la del evento)
+        // Filtrar gastos por el mes (usando la fecha del gasto, de creación o del evento)
         val expensesInMonth = allGroupExpenses.filter { expense ->
-            expense.incurredAt?.let { date ->
+            val dateToUse = expense.incurredAt ?: expense.createdAt ?: allEvents.find { it.id == expense.eventId }?.startDate
+            dateToUse?.let { date ->
                 calendar.time = date
                 calendar.get(java.util.Calendar.MONTH) == selectedMonthIndex
             } ?: false
@@ -256,9 +257,13 @@ class GroupDetailFragment : Fragment() {
             val legendItem = android.widget.LinearLayout(context).apply {
                 orientation = android.widget.LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(4, 4, 4, 4)
-                val params = android.widget.GridLayout.LayoutParams()
-                params.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                setPadding(8, 6, 8, 6)
+                
+                val params = android.widget.GridLayout.LayoutParams().apply {
+                    width = 0
+                    columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                    setMargins(0, 0, 0, 0)
+                }
                 layoutParams = params
                 
                 val colorView = View(context).apply {
@@ -296,7 +301,7 @@ class GroupDetailFragment : Fragment() {
         val density = resources.displayMetrics.density
         val maxHeight = (180 * density).toInt()
 
-        data.entries.sortedByDescending { it.value.sumOf { exp -> exp.amount } }.take(4).forEachIndexed { index, entry ->
+        data.entries.sortedByDescending { it.value.sumOf { exp -> exp.amount } }.forEachIndexed { index, entry ->
             val amount = entry.value.sumOf { it.amount }
             val height = ((amount / maxAmount) * maxHeight).toInt().coerceAtLeast((10 * density).toInt())
             

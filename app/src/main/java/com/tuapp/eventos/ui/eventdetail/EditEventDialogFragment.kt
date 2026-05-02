@@ -65,6 +65,7 @@ class EditEventDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        applyEventColor()
         setupIconDropdown()
         setupColorSelection()
         setupDateTimePicker()
@@ -72,6 +73,32 @@ class EditEventDialogFragment : DialogFragment() {
         observeViewModel()
         
         event?.let { populateFields(it) }
+    }
+
+    private fun applyEventColor() {
+        val colorStr = viewModel.event.value?.color
+        colorStr?.let {
+            try {
+                val colorInt = android.graphics.Color.parseColor(it)
+                binding.root.strokeColor = colorInt
+                binding.root.strokeWidth = (2 * resources.displayMetrics.density).toInt()
+                
+                binding.tvDialogTitle.setTextColor(colorInt)
+                binding.btnSave.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                
+                val parent = binding.tvDialogTitle.parent as? ViewGroup
+                parent?.let { container ->
+                    for (i in 0 until container.childCount) {
+                        val child = container.getChildAt(i)
+                        if (child is com.google.android.material.textfield.TextInputLayout) {
+                            child.boxStrokeColor = colorInt
+                            child.setEndIconTintList(android.content.res.ColorStateList.valueOf(colorInt))
+                            child.defaultHintTextColor = android.content.res.ColorStateList.valueOf(colorInt)
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
     }
 
     private fun setupDateTimePicker() {
