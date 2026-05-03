@@ -592,6 +592,7 @@ class EventDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.roleOpState.collectLatest { state ->
                 if (state is EventViewModel.RoleOpState.Success) {
+                    Toast.makeText(context, "Operación realizada con éxito", Toast.LENGTH_SHORT).show()
                     viewModel.resetRoleOpState()
                 } else if (state is EventViewModel.RoleOpState.Error) {
                     Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()

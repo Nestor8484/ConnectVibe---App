@@ -153,17 +153,24 @@ class EventViewModel : ViewModel() {
     fun removeParticipant(eventId: String, userId: String) {
         viewModelScope.launch {
             _roleOpState.value = RoleOpState.Loading
+            
+            // 1. Actualización optimista de la UI
+            val oldParticipants = _participants.value
+            _participants.value = oldParticipants.filter { it.userId != userId }
+            
+            // 2. Operación en el servidor
             val result = repository.leaveEvent(eventId, userId)
+            
             if (result.isSuccess) {
-                // Actualizar la lista local inmediatamente
-                val updatedParticipants = _participants.value.filter { it.userId != userId }
-                _participants.value = updatedParticipants
-                
-                // Opcional: recargar del servidor para asegurar sincronización
-                loadParticipants(eventId)
-                
+                // 3. Recarga forzada y síncrona para asegurar el estado final
+                val updatedResult = repository.getEventParticipants(eventId)
+                if (updatedResult.isSuccess) {
+                    _participants.value = updatedResult.getOrThrow()
+                }
                 _roleOpState.value = RoleOpState.Success
             } else {
+                // Revertir en caso de error
+                _participants.value = oldParticipants
                 _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar participante")
             }
         }

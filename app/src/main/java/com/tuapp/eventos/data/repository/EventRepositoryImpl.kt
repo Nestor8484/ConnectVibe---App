@@ -221,6 +221,18 @@ class EventRepositoryImpl : EventRepository {
                 }
             }
             
+            // 3. Opcional: Eliminar notificaciones relacionadas
+            try {
+                client.from("notifications_event_tasks").delete {
+                    filter {
+                        eq("receiver_id", userId)
+                        // No tenemos el taskId pero podemos limpiar notificaciones de tareas del usuario
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("EventRepository", "Non-critical error clearing task notifications: ${e.message}")
+            }
+            
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("EventRepository", "Error removing user from event: ${e.message}", e)
@@ -478,8 +490,18 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
-    override suspend fun deleteEvent(eventId: String): Result<Unit> {
-        return try {
+    override suspend fun deleteEvent(eventId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            android.util.Log.d("EventRepository", "Deleting event $eventId and all its data")
+            
+            // Eliminar datos relacionados manualmente por si no hay CASCADE
+            try { client.from("event_role_members").delete { filter { eq("event_id", eventId) } } } catch (e: Exception) {}
+            try { client.from("event_members").delete { filter { eq("event_id", eventId) } } } catch (e: Exception) {}
+            try { client.from("event_tasks").delete { filter { eq("event_id", eventId) } } } catch (e: Exception) {}
+            try { client.from("event_roles").delete { filter { eq("event_id", eventId) } } } catch (e: Exception) {}
+            try { client.from("expenses").delete { filter { eq("event_id", eventId) } } } catch (e: Exception) {}
+            
+            // Finalmente eliminar el evento
             client.from("events").delete {
                 filter {
                     eq("id", eventId)
