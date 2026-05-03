@@ -70,6 +70,12 @@ class JoinedEventsFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-setup filters to avoid adapter issues when returning from detail
+        setupFilters()
+    }
+
     private fun setupToolbar() {
         binding.tvScreenTitle.text = getString(R.string.joined_label)
     }

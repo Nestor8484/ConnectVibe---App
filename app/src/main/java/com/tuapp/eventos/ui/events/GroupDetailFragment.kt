@@ -401,6 +401,9 @@ class GroupDetailFragment : Fragment() {
         binding.includeMembers.root.visibility = View.GONE
         binding.includeInfo.root.visibility = View.GONE
         binding.fabAddGroupEvent.visibility = View.VISIBLE
+        
+        // Re-establecer el adapter del filtro para evitar el bug al cambiar de pestañas
+        setupFilters()
     }
 
     private fun showDashboard() {
@@ -409,6 +412,9 @@ class GroupDetailFragment : Fragment() {
         binding.includeMembers.root.visibility = View.GONE
         binding.includeInfo.root.visibility = View.GONE
         binding.fabAddGroupEvent.visibility = View.GONE
+        
+        // Re-establecer los filtros del dashboard para evitar el bug al cambiar de pestañas
+        setupDashboard()
         updateDashboardData()
     }
 
