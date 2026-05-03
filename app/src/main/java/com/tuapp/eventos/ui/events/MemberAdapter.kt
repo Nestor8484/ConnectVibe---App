@@ -57,8 +57,8 @@ class MemberAdapter(
             
             android.util.Log.d("MemberAdapter", "User: ${profile.username}, isAdmin: ${member.is_admin}, isOwner: $isTargetOwner, ownerId: $groupOwnerId")
             
-            // Long click for admin actions
-            binding.root.setOnLongClickListener {
+            // Click simple para gestionar miembro (más intuitivo que Long Click)
+            binding.root.setOnClickListener {
                 if (isCurrentUserAdmin && !isTargetOwner) {
                     val context = binding.root.context
                     val items = mutableListOf<String>()
@@ -86,7 +86,6 @@ class MemberAdapter(
                         }
                         .show()
                 }
-                true
             }
         }
     }

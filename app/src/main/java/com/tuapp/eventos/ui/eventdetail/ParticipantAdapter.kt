@@ -3,7 +3,6 @@ package com.tuapp.eventos.ui.eventdetail
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -54,35 +53,37 @@ class ParticipantAdapter(
             
             if (isCurrentUserAdmin && !isCreator) {
                 binding.root.setOnClickListener { view ->
-                    val popup = PopupMenu(view.context, view)
-                    val ctx = view.context
+                    val context = view.context
+                    val items = mutableListOf<String>()
                     
                     if (isAdmin) {
-                        popup.menu.add(ctx.getString(R.string.remove_admin))
+                        items.add(context.getString(R.string.remove_admin))
                     } else {
-                        popup.menu.add(ctx.getString(R.string.make_admin))
+                        items.add(context.getString(R.string.make_admin))
                     }
                     
-                    popup.menu.add(ctx.getString(R.string.remove_from_event))
+                    items.add(context.getString(R.string.remove_from_event))
                     
-                    popup.setOnMenuItemClickListener { item ->
-                        when {
-                            item.title == ctx.getString(R.string.make_admin) -> onAdminPromotion(participant.userId, true)
-                            item.title == ctx.getString(R.string.remove_admin) -> onAdminPromotion(participant.userId, false)
-                            item.title == ctx.getString(R.string.remove_from_event) -> {
-                                com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
-                                    .setTitle(R.string.remove_participant_title)
-                                    .setMessage(R.string.confirm_remove_participant)
-                                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                                        onRemoveMember(participant.userId)
-                                    }
-                                    .setNegativeButton(android.R.string.cancel, null)
-                                    .show()
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                        .setTitle("Gestionar Participante")
+                        .setItems(items.toTypedArray()) { _, which ->
+                            val selectedAction = items[which]
+                            when {
+                                selectedAction == context.getString(R.string.make_admin) -> onAdminPromotion(participant.userId, true)
+                                selectedAction == context.getString(R.string.remove_admin) -> onAdminPromotion(participant.userId, false)
+                                selectedAction == context.getString(R.string.remove_from_event) -> {
+                                    com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                                        .setTitle(R.string.remove_participant_title)
+                                        .setMessage(R.string.confirm_remove_participant)
+                                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                                            onRemoveMember(participant.userId)
+                                        }
+                                        .setNegativeButton(android.R.string.cancel, null)
+                                        .show()
+                                }
                             }
                         }
-                        true
-                    }
-                    popup.show()
+                        .show()
                 }
             } else {
                 binding.root.setOnClickListener(null)

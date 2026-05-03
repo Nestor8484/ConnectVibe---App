@@ -89,4 +89,10 @@
     <string name="profile_updated_success">Perfil actualizado correctamente</string>
     <string name="password_updated_success">Contraseña actualizada correctamente</string>
     <string name="error_passwords_dont_match">Las contraseñas no coinciden</string>
+    <string name="make_admin">Hacer Admin</string>
+    <string name="remove_admin">Quitar como Admin</string>
+    <string name="remove_from_event">Eliminar del evento</string>
+    <string name="remove_participant_title">Eliminar Participante</string>
+    <string name="confirm_remove_participant">¿Estás seguro de que quieres eliminar a este participante del evento?</string>
+    <string name="label_date">Fecha</string>
 </resources>
