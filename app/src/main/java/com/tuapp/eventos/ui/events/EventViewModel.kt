@@ -524,6 +524,9 @@ class EventViewModel : ViewModel() {
             _createEventState.value = CreateEventState.Loading
             val result = repository.deleteEvent(eventId)
             if (result.isSuccess) {
+                if (_event.value?.id == eventId) {
+                    _event.value = null
+                }
                 _createEventState.value = CreateEventState.Success
             } else {
                 _createEventState.value = CreateEventState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar")

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
+    android:layout_marginHorizontal="24dp"
     android:layout_marginVertical="8dp"
     app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
     app:cardCornerRadius="16dp"
@@ -15,41 +15,46 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <CheckBox
-            android:id="@+id/cbTaskStatus"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+        <ImageView
+            android:id="@+id/ivTaskIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle_outline"
+            android:padding="10dp"
+            android:src="@android:drawable/ic_menu_edit"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:buttonTint="?attr/colorPrimary" />
+            app:tint="?attr/colorPrimary" />
 
         <TextView
             android:id="@+id/tvTaskTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            tools:text="Preparar lista de invitados"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
             android:textColor="?attr/colorOnSurface"
             android:textSize="17sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/cbTaskStatus"
-            app:layout_constraintTop_toTopOf="@id/cbTaskStatus"
-            app:layout_constraintBottom_toBottomOf="@id/cbTaskStatus"/>
+            app:layout_constraintEnd_toStartOf="@id/tvTaskStatusBadge"
+            app:layout_constraintStart_toEndOf="@id/ivTaskIcon"
+            app:layout_constraintTop_toTopOf="@id/ivTaskIcon"
+            tools:text="Preparar lista de invitados" />
 
         <TextView
-            android:id="@+id/tvTaskStatusLabel"
+            android:id="@+id/tvTaskStatusBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            tools:text="En curso"
+            android:background="@drawable/bg_dot_outline"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:textAllCaps="true"
             android:textSize="10sp"
-            android:textStyle="italic"
-            android:textColor="@color/md_theme_primary"
-            app:layout_constraintStart_toStartOf="@id/tvTaskTitle"
-            app:layout_constraintTop_toBottomOf="@id/tvTaskTitle" />
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="PENDIENTE" />
 
         <TextView
             android:id="@+id/tvRoleTag"
@@ -58,14 +63,22 @@
             android:layout_marginTop="12dp"
             android:background="@drawable/bg_dot_outline"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="4dp"
-            tools:text="Logística"
+            android:paddingVertical="6dp"
             android:textColor="?attr/colorPrimary"
             android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="@id/tvTaskTitle"
-            app:layout_constraintTop_toBottomOf="@id/cbTaskStatus"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toBottomOf="@id/tvTaskTitle"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="Logística" />
+
+        <CheckBox
+            android:id="@+id/cbTaskStatus"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
