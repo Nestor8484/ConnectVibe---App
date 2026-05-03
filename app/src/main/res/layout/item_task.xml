@@ -40,6 +40,18 @@
             app:layout_constraintBottom_toBottomOf="@id/cbTaskStatus"/>
 
         <TextView
+            android:id="@+id/tvTaskStatusLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            tools:text="En curso"
+            android:textSize="10sp"
+            android:textStyle="italic"
+            android:textColor="@color/md_theme_primary"
+            app:layout_constraintStart_toStartOf="@id/tvTaskTitle"
+            app:layout_constraintTop_toBottomOf="@id/tvTaskTitle" />
+
+        <TextView
             android:id="@+id/tvRoleTag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

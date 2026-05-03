@@ -44,17 +44,32 @@ class TaskAdapter(
             onTaskStatusChange: (EventTask, Boolean) -> Unit
         ) {
             binding.tvTaskTitle.text = task.title
-            binding.tvTaskTitle.paintFlags = if (task.isCompleted) {
+            
+            val isCompleted = task.status == "completed" || task.isCompleted
+            binding.tvTaskTitle.paintFlags = if (isCompleted) {
                 binding.tvTaskTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             } else {
                 binding.tvTaskTitle.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             }
 
             binding.cbTaskStatus.setOnCheckedChangeListener(null)
-            binding.cbTaskStatus.isChecked = task.isCompleted
+            binding.cbTaskStatus.isChecked = isCompleted
             binding.cbTaskStatus.setOnCheckedChangeListener { _, isChecked ->
                 onTaskStatusChange(task, isChecked)
             }
+
+            binding.tvTaskStatusLabel.text = when (task.status) {
+                "in_progress" -> "En curso"
+                "completed" -> "Completada"
+                else -> "Pendiente"
+            }
+            
+            val statusColor = when (task.status) {
+                "in_progress" -> Color.parseColor("#EF6C00") // Naranja oscuro
+                "completed" -> Color.parseColor("#2E7D32") // Verde oscuro
+                else -> Color.parseColor("#757575") // Gris
+            }
+            binding.tvTaskStatusLabel.setTextColor(statusColor)
 
             binding.tvRoleTag.text = role?.name ?: "Sin rol"
             

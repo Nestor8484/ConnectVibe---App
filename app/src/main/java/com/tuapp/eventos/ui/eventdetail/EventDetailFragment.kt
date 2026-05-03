@@ -76,7 +76,8 @@ class EventDetailFragment : Fragment() {
     private val taskAdapter = TaskAdapter(
         onTaskClick = { task -> showTaskDetailDialog(task) },
         onTaskStatusChange = { task, isCompleted ->
-            viewModel.updateTask(task.copy(isCompleted = isCompleted))
+            val newStatus = if (isCompleted) "completed" else "pending"
+            viewModel.updateTaskStatus(task, newStatus)
         }
     )
 
@@ -1023,6 +1024,27 @@ class EventDetailFragment : Fragment() {
         dialogView.findViewById<TextView>(R.id.tvDialogTaskName).text = task.title
         dialogView.findViewById<TextView>(R.id.tvDialogTaskRole).text = role?.name ?: "Sin rol"
         dialogView.findViewById<TextView>(R.id.tvDialogTaskDescription).text = task.description ?: "Sin descripción"
+
+        val toggleGroup = dialogView.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.toggleGroupStatus)
+        when (task.status) {
+            "pending" -> toggleGroup.check(R.id.btnStatusPending)
+            "in_progress" -> toggleGroup.check(R.id.btnStatusInProgress)
+            "completed" -> toggleGroup.check(R.id.btnStatusCompleted)
+        }
+
+        toggleGroup.addOnButtonCheckedListener { group, checkedId, isChecked ->
+            if (isChecked) {
+                val newStatus = when (checkedId) {
+                    R.id.btnStatusInProgress -> "in_progress"
+                    R.id.btnStatusCompleted -> "completed"
+                    else -> "pending"
+                }
+                if (newStatus != task.status) {
+                    viewModel.updateTaskStatus(task, newStatus)
+                    dialog.dismiss()
+                }
+            }
+        }
 
         dialogView.findViewById<MaterialButton>(R.id.btnNotifyTask).setOnClickListener {
             viewModel.notifyTask(task)

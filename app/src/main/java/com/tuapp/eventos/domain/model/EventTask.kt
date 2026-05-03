@@ -25,6 +25,9 @@ data class EventTask(
     @SerialName("description")
     val description: String? = null,
     
+    @SerialName("status")
+    val status: String = "pending", // "pending", "in_progress", "completed"
+    
     @SerialName("is_completed")
     val isCompleted: Boolean = false,
     

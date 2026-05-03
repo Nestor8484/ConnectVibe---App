@@ -262,6 +262,30 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun updateTaskStatus(task: com.tuapp.eventos.domain.model.EventTask, newStatus: String) {
+        val updatedTask = task.copy(
+            status = newStatus,
+            isCompleted = newStatus == "completed"
+        )
+        viewModelScope.launch {
+            _taskOpState.value = RoleOpState.Loading
+            val result = repository.updateTask(updatedTask)
+            if (result.isSuccess) {
+                _taskOpState.value = RoleOpState.Success
+                loadTasks(task.eventId)
+                
+                if (newStatus == "in_progress") {
+                    val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: return@launch
+                    val eventName = _event.value?.name ?: "Evento"
+                    val message = "¡La tarea '${task.title}' acaba de empezar! (Evento: $eventName)"
+                    repository.notifyTask(task.id!!, task.eventId, task.roleId, userId, message)
+                }
+            } else {
+                _taskOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al actualizar tarea")
+            }
+        }
+    }
+
     fun resetTaskOpState() {
         _taskOpState.value = RoleOpState.Idle
     }

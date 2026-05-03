@@ -53,6 +53,51 @@
             android:layout_marginBottom="24dp"
             tools:text="Debes traer los altavoces y la lista de reproducción preparada." />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estado"
+            android:textColor="#1565C0"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroupStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:layout_marginBottom="24dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStatusPending"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Pendiente"
+                android:textSize="10sp"
+                android:paddingHorizontal="4dp"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStatusInProgress"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="En curso"
+                android:textSize="10sp"
+                android:paddingHorizontal="4dp"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStatusCompleted"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Hecho"
+                android:textSize="10sp"
+                android:paddingHorizontal="4dp"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNotifyTask"
             android:layout_width="match_parent"
