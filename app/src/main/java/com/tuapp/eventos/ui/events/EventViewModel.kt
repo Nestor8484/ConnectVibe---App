@@ -154,23 +154,29 @@ class EventViewModel : ViewModel() {
         viewModelScope.launch {
             _roleOpState.value = RoleOpState.Loading
             
-            // 1. Actualización optimista de la UI
-            val oldParticipants = _participants.value
-            _participants.value = oldParticipants.filter { it.userId != userId }
+            // 1. Actualización optimista de la UI (eliminar visualmente de inmediato)
+            val currentParticipants = _participants.value
+            _participants.value = currentParticipants.filter { it.userId != userId }
             
-            // 2. Operación en el servidor
+            // 2. Operación de eliminación en el servidor
             val result = repository.leaveEvent(eventId, userId)
             
             if (result.isSuccess) {
-                // 3. Recarga forzada y síncrona para asegurar el estado final
+                // 3. MARGEN DE SEGURIDAD (FUNDAMENTAL): Esperar a que la BD de Supabase procese el borrado.
+                // Sin este delay, la siguiente llamada a 'loadParticipants' puede recibir datos cacheados o 
+                // una vista de lectura de la BD que aún contiene al usuario borrado.
+                kotlinx.coroutines.delay(800) 
+                
+                // 4. Recarga forzada del servidor para asegurar sincronización real
                 val updatedResult = repository.getEventParticipants(eventId)
                 if (updatedResult.isSuccess) {
                     _participants.value = updatedResult.getOrThrow()
                 }
+                
                 _roleOpState.value = RoleOpState.Success
             } else {
-                // Revertir en caso de error
-                _participants.value = oldParticipants
+                // Si falla en el servidor, revertimos el cambio visual
+                _participants.value = currentParticipants
                 _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar participante")
             }
         }
