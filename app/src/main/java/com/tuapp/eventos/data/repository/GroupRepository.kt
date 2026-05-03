@@ -512,6 +512,44 @@ class GroupRepository {
     suspend fun removeMember(groupId: String, userId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
+                // 1. Obtener todos los eventos de este grupo
+                val eventsResponse = client.from("events")
+                    .select(io.github.jan.supabase.postgrest.query.Columns.raw("id")) {
+                        filter {
+                            eq("group_id", groupId)
+                        }
+                    }
+                
+                val eventsArray = json.parseToJsonElement(eventsResponse.data).jsonArray
+                val eventIds = eventsArray.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.contentOrNull }
+
+                if (eventIds.isNotEmpty()) {
+                    // 2. Eliminar al usuario de los roles en esos eventos
+                    client.from("event_role_members").delete {
+                        filter {
+                            eq("user_id", userId)
+                            or {
+                                eventIds.forEach { id ->
+                                    eq("event_id", id)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 3. Eliminar al usuario de los miembros de esos eventos
+                    client.from("event_members").delete {
+                        filter {
+                            eq("user_id", userId)
+                            or {
+                                eventIds.forEach { id ->
+                                    eq("event_id", id)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. Finalmente, eliminar del grupo
                 client.from("group_members").delete {
                     filter {
                         eq("group_id", groupId)
@@ -520,6 +558,7 @@ class GroupRepository {
                 }
                 Result.success(Unit)
             } catch (e: Exception) {
+                Log.e("GroupRepository", "Error removing member: ${e.message}")
                 Result.failure(e)
             }
         }

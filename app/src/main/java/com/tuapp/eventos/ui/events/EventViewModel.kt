@@ -155,8 +155,14 @@ class EventViewModel : ViewModel() {
             _roleOpState.value = RoleOpState.Loading
             val result = repository.leaveEvent(eventId, userId)
             if (result.isSuccess) {
-                _roleOpState.value = RoleOpState.Success
+                // Actualizar la lista local inmediatamente
+                val updatedParticipants = _participants.value.filter { it.userId != userId }
+                _participants.value = updatedParticipants
+                
+                // Opcional: recargar del servidor para asegurar sincronización
                 loadParticipants(eventId)
+                
+                _roleOpState.value = RoleOpState.Success
             } else {
                 _roleOpState.value = RoleOpState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar participante")
             }

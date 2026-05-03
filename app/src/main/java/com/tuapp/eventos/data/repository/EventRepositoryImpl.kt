@@ -10,8 +10,10 @@ import com.tuapp.eventos.domain.model.GroupMember
 import com.tuapp.eventos.domain.model.MemberRole
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
@@ -199,8 +201,8 @@ class EventRepositoryImpl : EventRepository {
         }
     }
 
-    override suspend fun leaveEvent(eventId: String, userId: String): Result<Unit> {
-        return try {
+    override suspend fun leaveEvent(eventId: String, userId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             android.util.Log.d("EventRepository", "Removing user $userId from event $eventId")
             
             // 1. Eliminar al usuario de todos los roles que tenga asignados en este evento
