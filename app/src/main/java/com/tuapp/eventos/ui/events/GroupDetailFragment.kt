@@ -33,6 +33,7 @@ class GroupDetailFragment : Fragment() {
     private val memberViewModel: MemberViewModel by viewModels()
     private val groupViewModel: GroupViewModel by viewModels()
     private var isUserAdmin = false
+    private var isLeaving = false
     private var allEvents: List<Event> = emptyList()
     private var allGroupExpenses: List<com.tuapp.eventos.domain.model.Expense> = emptyList()
     private val eventStatusAdapter = EventStatusAdapter()
@@ -99,6 +100,31 @@ class GroupDetailFragment : Fragment() {
 
         binding.ivUserProfile.setOnClickListener {
             findNavController().navigate(R.id.profileFragment)
+        }
+
+        binding.includeInfo.btnLeaveGroup.setOnClickListener {
+            val userId = com.tuapp.eventos.di.SupabaseModule.client.auth.currentUserOrNull()?.id ?: return@setOnClickListener
+            val groupId = arguments?.getString("groupId") ?: return@setOnClickListener
+            
+            // Verificar si es el único admin
+            val membersState = memberViewModel.membersState.value
+            if (membersState is MemberViewModel.MembersState.Success) {
+                val admins = membersState.members.count { it.first.is_admin || it.first.user_id == groupViewModel.currentGroup.value?.created_by }
+                if (isUserAdmin && admins <= 1) {
+                    Toast.makeText(context, "No puedes abandonar el grupo siendo el único administrador. Asigna a otro admin primero.", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+            }
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Abandonar Grupo")
+                .setMessage("¿Estás seguro de que quieres abandonar este grupo?")
+                .setPositiveButton("Abandonar") { _, _ ->
+                    isLeaving = true
+                    memberViewModel.removeMember(groupId, userId)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
         }
 
         binding.fabAddGroupEvent.setOnClickListener {
@@ -487,10 +513,14 @@ class GroupDetailFragment : Fragment() {
                     is MemberViewModel.MemberOpState.Success -> {
                         Toast.makeText(context, "Operación realizada con éxito", Toast.LENGTH_SHORT).show()
                         memberViewModel.resetMemberOpState()
+                        if (isLeaving) {
+                            findNavController().navigateUp()
+                        }
                     }
                     is MemberViewModel.MemberOpState.Error -> {
                         Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                         memberViewModel.resetMemberOpState()
+                        isLeaving = false
                     }
                     else -> {}
                 }

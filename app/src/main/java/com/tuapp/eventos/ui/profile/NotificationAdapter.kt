@@ -42,7 +42,10 @@ class NotificationAdapter(
                 "task_reminder" -> {
                     binding.tvNotificationTitle.text = "Aviso de Tarea"
                     binding.tvNotificationTitle.setTextColor(android.graphics.Color.parseColor("#E65100"))
-                    binding.tvNotificationMessage.text = "Tienes una nueva tarea pendiente: ${notification.task_title ?: "Nueva tarea"}"
+                    val eventStr = if (!notification.event_name.isNullOrBlank()) " del evento '${notification.event_name}'" else ""
+                    binding.tvNotificationMessage.text = "Tienes una nueva tarea pendiente: ${notification.task_title ?: "Nueva tarea"}$eventStr"
+                    binding.llActions.visibility = View.VISIBLE // Asegurar que sea visible si hay acciones, pero en el original era GONE
+                    // Re-checking original: binding.llActions.visibility = View.GONE
                     binding.llActions.visibility = View.GONE
                     binding.btnDelete.visibility = View.VISIBLE
                 }

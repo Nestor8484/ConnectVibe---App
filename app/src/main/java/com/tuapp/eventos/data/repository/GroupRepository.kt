@@ -356,7 +356,7 @@ class GroupRepository {
 
                 // 2. Notificaciones de tareas
                 val taskNotifResponse = client.from("notifications_event_tasks")
-                    .select(Columns.raw("*, event_tasks(title)")) {
+                    .select(Columns.raw("*, event_tasks(title, events(name))")) {
                         filter {
                             eq("receiver_id", userId)
                             eq("status", "pending")
@@ -380,9 +380,17 @@ class GroupRepository {
                         }
                         val taskTitle = taskObj?.get("title")?.jsonPrimitive?.contentOrNull
 
+                        val eventsElement = taskObj?.get("events")
+                        val eventObj = when (eventsElement) {
+                            is kotlinx.serialization.json.JsonObject -> eventsElement
+                            is kotlinx.serialization.json.JsonArray -> if (eventsElement.isNotEmpty()) eventsElement[0].jsonObject else null
+                            else -> null
+                        }
+                        val eventName = eventObj?.get("name")?.jsonPrimitive?.contentOrNull
+
                         val notif = json.decodeFromJsonElement<Notification>(
                             kotlinx.serialization.json.JsonObject(obj.filterKeys { it != "id" && it != "event_tasks" })
-                        ).copy(id = idStr, task_title = taskTitle, type = "task_reminder")
+                        ).copy(id = idStr, task_title = taskTitle, event_name = eventName, type = "task_reminder")
                         taskNotifications.add(notif)
                     } catch (e: Exception) { Log.e("GroupRepo_FIX", "Error decoding task alert: ${e.message}") }
                 }

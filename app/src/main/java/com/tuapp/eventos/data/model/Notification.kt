@@ -35,5 +35,9 @@ data class Notification(
     
     @OptIn(ExperimentalSerializationApi::class)
     @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val task_title: String? = null
+    val task_title: String? = null,
+
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val event_name: String? = null
 )

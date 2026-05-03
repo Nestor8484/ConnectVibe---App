@@ -138,6 +138,29 @@ class EventDetailFragment : Fragment() {
             handleStatusAction()
         }
 
+        binding.layoutInfo.findViewById<MaterialButton>(R.id.btnLeaveEvent).setOnClickListener {
+            val isChecked = false // Abandonar
+            val userId = com.tuapp.eventos.di.SupabaseModule.client.auth.currentUserOrNull()?.id
+            val currentEvent = viewModel.event.value
+            val isOwner = currentEvent?.createdBy == userId
+            
+            if (isOwner) {
+                Toast.makeText(context, "El creador no puede abandonar el evento", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Abandonar Evento")
+                .setMessage("¿Estás seguro de que quieres dejar de participar en este evento?")
+                .setPositiveButton("Abandonar") { _, _ ->
+                    if (currentEventId != null && userId != null) {
+                        viewModel.toggleParticipation(currentEventId!!, userId, isChecked, isOwner)
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
         binding.cbParticipateDetail.setOnClickListener {
             val isChecked = binding.cbParticipateDetail.isChecked
             val userId = SupabaseModule.client.auth.currentUserOrNull()?.id
@@ -218,6 +241,10 @@ class EventDetailFragment : Fragment() {
         binding.cbParticipateDetail.isEnabled = canLeave
         binding.cbParticipateDetail.alpha = if (canLeave) 1.0f else 0.6f
         
+        val btnLeaveEvent = binding.layoutInfo.findViewById<MaterialButton>(R.id.btnLeaveEvent)
+        val isParticipating = viewModel.isParticipating.value
+        btnLeaveEvent.visibility = if (isParticipating && !isUserAdmin) View.VISIBLE else View.GONE
+
         // El checkbox siempre debe ser visible para permitir unirse si no se participa, 
         // o para ver que se participa. El requerimiento del usuario "desaparecer el check" 
         // se refiere a la LISTA (EventAdapter), donde si no participas no debe salir el indicador "Asistiendo".

@@ -251,7 +251,8 @@ class EventViewModel : ViewModel() {
         val userId = SupabaseModule.client.auth.currentUserOrNull()?.id ?: return
         viewModelScope.launch {
             _taskOpState.value = RoleOpState.Loading
-            val message = "Nueva notificación para la tarea: ${task.title}"
+            val eventName = _event.value?.name ?: "Evento"
+            val message = "Nueva notificación para la tarea: ${task.title} (Evento: $eventName)"
             val result = repository.notifyTask(task.id!!, task.eventId, task.roleId, userId, message)
             if (result.isSuccess) {
                 _taskOpState.value = RoleOpState.Success
