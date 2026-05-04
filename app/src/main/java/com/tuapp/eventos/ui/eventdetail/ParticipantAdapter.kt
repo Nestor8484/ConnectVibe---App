@@ -12,8 +12,7 @@ import com.tuapp.eventos.domain.model.GroupMember
 import com.tuapp.eventos.domain.model.MemberRole
 
 class ParticipantAdapter(
-    private val onAdminPromotion: (String, Boolean) -> Unit = { _, _ -> },
-    private val onRemoveMember: (String) -> Unit = {}
+    private val onAdminPromotion: (String, Boolean) -> Unit = { _, _ -> }
 ) : ListAdapter<GroupMember, ParticipantAdapter.ParticipantViewHolder>(ParticipantDiffCallback()) {
 
     private var creatorId: String? = null
@@ -31,7 +30,7 @@ class ParticipantAdapter(
     }
 
     override fun onBindViewHolder(holder: ParticipantViewHolder, position: Int) {
-        holder.bind(getItem(position), creatorId, isCurrentUserAdmin, onAdminPromotion, onRemoveMember)
+        holder.bind(getItem(position), creatorId, isCurrentUserAdmin, onAdminPromotion)
     }
 
     class ParticipantViewHolder(private val binding: ItemParticipantBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -39,8 +38,7 @@ class ParticipantAdapter(
             participant: GroupMember, 
             creatorId: String?, 
             isCurrentUserAdmin: Boolean,
-            onAdminPromotion: (String, Boolean) -> Unit,
-            onRemoveMember: (String) -> Unit
+            onAdminPromotion: (String, Boolean) -> Unit
         ) {
             binding.tvParticipantName.text = participant.userName
             binding.tvParticipantRole.text = participant.email
@@ -62,8 +60,6 @@ class ParticipantAdapter(
                         items.add(context.getString(R.string.make_admin))
                     }
                     
-                    items.add(context.getString(R.string.remove_from_event))
-                    
                     com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
                         .setTitle("Gestionar Participante")
                         .setItems(items.toTypedArray()) { _, which ->
@@ -71,16 +67,6 @@ class ParticipantAdapter(
                             when {
                                 selectedAction == context.getString(R.string.make_admin) -> onAdminPromotion(participant.userId, true)
                                 selectedAction == context.getString(R.string.remove_admin) -> onAdminPromotion(participant.userId, false)
-                                selectedAction == context.getString(R.string.remove_from_event) -> {
-                                    com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
-                                        .setTitle(R.string.remove_participant_title)
-                                        .setMessage(R.string.confirm_remove_participant)
-                                        .setPositiveButton(android.R.string.ok) { _, _ ->
-                                            onRemoveMember(participant.userId)
-                                        }
-                                        .setNegativeButton(android.R.string.cancel, null)
-                                        .show()
-                                }
                             }
                         }
                         .show()

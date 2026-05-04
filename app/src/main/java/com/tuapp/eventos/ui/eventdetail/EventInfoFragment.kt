@@ -33,11 +33,6 @@ class EventInfoFragment : Fragment() {
             viewModel.event.value?.id?.let { eventId ->
                 viewModel.updateParticipantRole(eventId, userId, isAdmin)
             }
-        },
-        onRemoveMember = { userId ->
-            viewModel.event.value?.id?.let { eventId ->
-                viewModel.removeParticipant(eventId, userId)
-            }
         }
     )
 

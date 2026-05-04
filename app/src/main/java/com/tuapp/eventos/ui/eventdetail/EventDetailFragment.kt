@@ -54,11 +54,6 @@ class EventDetailFragment : Fragment() {
             currentEventId?.let { eventId ->
                 viewModel.updateParticipantRole(eventId, userId, isAdmin)
             }
-        },
-        onRemoveMember = { userId ->
-            currentEventId?.let { eventId ->
-                viewModel.removeParticipant(eventId, userId)
-            }
         }
     )
 
@@ -220,7 +215,7 @@ class EventDetailFragment : Fragment() {
             val selectedTab = binding.tabLayout.selectedTabPosition
             
             // El botón de acción (Iniciar/Finalizar) solo se muestra en la pestaña de Información
-            binding.btnStatusAction.visibility = if (selectedTab == 3) View.VISIBLE else View.GONE
+            binding.btnStatusAction.visibility = if (selectedTab == 4) View.VISIBLE else View.GONE
             when (status) {
                 "pending" -> {
                     binding.btnStatusAction.text = "Iniciar"
